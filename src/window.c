@@ -49,6 +49,11 @@ int ex_window_init(uint32_t width, uint32_t height, const char *title)
   glfwSetInputMode(display.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
   glfwSwapInterval(0);
 
+  // set html5 key callback
+  emscripten_set_keypress_callback(0, 0, 1, ex_ehandle_keys);
+  emscripten_set_keydown_callback(0, 0, 1, ex_ehandle_keys);
+  emscripten_set_keyup_callback(0, 0, 1, ex_ehandle_keys);
+
   return 1;
 }
 
@@ -73,12 +78,18 @@ void ex_resize_callback(GLFWwindow* window, int width, int height)
 
 void ex_mouse_callback(GLFWwindow* window, double x, double y)
 {
+  if (glfwGetInputMode(display.window, GLFW_CURSOR) != GLFW_CURSOR_DISABLED)
+    return;
+
   display.mouse_x = x;
   display.mouse_y = y;
 }
 
 void ex_key_callback(GLFWwindow *window, int key, int scancode, int action, int mode)
 {
+  if (glfwGetInputMode(display.window, GLFW_CURSOR) != GLFW_CURSOR_DISABLED)
+    return;
+
   if (action == GLFW_PRESS)
     ex_keys_down[key] = 1;
   if (action == GLFW_RELEASE)
@@ -87,6 +98,9 @@ void ex_key_callback(GLFWwindow *window, int key, int scancode, int action, int 
 
 void ex_button_callback(GLFWwindow *window, int button, int action, int mods)
 {
+  if (glfwGetInputMode(display.window, GLFW_CURSOR) != GLFW_CURSOR_DISABLED)
+    return;
+
   if (action == GLFW_PRESS)
     ex_buttons_down[button] = 1;
   if (action == GLFW_RELEASE)
@@ -101,4 +115,13 @@ void ex_char_callback(GLFWwindow *window, unsigned int c)
 void ex_scroll_callback(GLFWwindow *window, double xoffset, double yoffset)
 {
 
+}
+
+EM_BOOL ex_ehandle_keys(int type, const EmscriptenKeyboardEvent *e, void *user_data)
+{
+  // prevent scrolling with arrow keys and stuff when focused
+  if (glfwGetInputMode(display.window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED)
+    return 1;
+
+  return 0;
 }

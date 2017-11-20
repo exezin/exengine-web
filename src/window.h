@@ -5,6 +5,7 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <inttypes.h>
+#include <emscripten/html5.h>
 
 typedef struct {
 	GLFWwindow *window;
@@ -26,6 +27,8 @@ void ex_scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
 void ex_mouse_callback(GLFWwindow* window, double x, double y);
 
 void ex_resize_callback(GLFWwindow* window, int width, int height);
+
+EM_BOOL ex_ehandle_keys(int type, const EmscriptenKeyboardEvent *e, void *user_data);
 
 /**
  * [ex_window_init creates the window and gl context]
