@@ -4,7 +4,7 @@ FILES=main.c
 BUILD=index.html
 BDIR=build
 
-SRC=main.c shader.c window.c camera.c texture.c
+SRC=main.c shader.c window.c camera.c texture.c mesh.c model.c iqm.c scene.c
 
 all: files proj
 
