@@ -11,10 +11,16 @@
 #include "scene.h"
 #include "iqm.h"
 
+// scene stuff
 GLuint shader;
 ex_fps_camera_t *camera;
 ex_scene_t *scene;
 ex_model_t *dude;
+
+// timestep stuff
+const double phys_delta_time = 1.0 / 60.0;
+const double slowest_frame = 1.0 / 15.0;
+double delta_time, last_frame_time, accumulator = 0.0;
 
 void do_frame();
 
@@ -38,41 +44,50 @@ int main()
   // set to animating
   ex_model_set_anim(dude, 0);
 
+  last_frame_time = glfwGetTime();
+
   // start game loop
   emscripten_set_main_loop(do_frame, 0, 0);
 }
 
 void do_frame()
 {
-  // update
-  ex_fps_camera_update(camera, shader);
+  // delta time shiz
+  double current_frame_time = glfwGetTime();
+  delta_time = current_frame_time - last_frame_time;
+  last_frame_time = current_frame_time;
 
-  // move the camera with wasd
-  vec3 speed, side;
-  if (ex_keys_down[GLFW_KEY_W]) {
-    vec3_scale(speed, camera->front, 0.2f);
-    vec3_add(camera->position, camera->position, speed);
-  }
-  if (ex_keys_down[GLFW_KEY_S]) {
-    vec3_scale(speed, camera->front, 0.2f);
-    vec3_sub(camera->position, camera->position, speed);
-  }
-  if (ex_keys_down[GLFW_KEY_A]) {
-    vec3_mul_cross(side, camera->front, camera->up);
-    vec3_norm(side, side);
-    vec3_scale(side, side, 0.2f);
-    vec3_sub(camera->position, camera->position, side);
-  }
-  if (ex_keys_down[GLFW_KEY_D]) {
-    vec3_mul_cross(side, camera->front, camera->up);
-    vec3_norm(side, side);
-    vec3_scale(side, side, 0.2f);
-    vec3_add(camera->position, camera->position, side);
+  accumulator += delta_time;
+  while (accumulator >= phys_delta_time) {
+    // move the camera with wasd
+    vec3 speed, side;
+    if (ex_keys_down[GLFW_KEY_W]) {
+      vec3_scale(speed, camera->front, 0.2f);
+      vec3_add(camera->position, camera->position, speed);
+    }
+    if (ex_keys_down[GLFW_KEY_S]) {
+      vec3_scale(speed, camera->front, 0.2f);
+      vec3_sub(camera->position, camera->position, speed);
+    }
+    if (ex_keys_down[GLFW_KEY_A]) {
+      vec3_mul_cross(side, camera->front, camera->up);
+      vec3_norm(side, side);
+      vec3_scale(side, side, 0.2f);
+      vec3_sub(camera->position, camera->position, side);
+    }
+    if (ex_keys_down[GLFW_KEY_D]) {
+      vec3_mul_cross(side, camera->front, camera->up);
+      vec3_norm(side, side);
+      vec3_scale(side, side, 0.2f);
+      vec3_add(camera->position, camera->position, side);
+    }
+    
+    ex_scene_update(scene, phys_delta_time);
+
+    accumulator -= phys_delta_time;
   }
 
-  // update and render scene
-  // *FIX DELTA TIME HERE*
-  ex_scene_update(scene, 0.05f);
+  // render scene
   ex_scene_draw(scene);
 
   glfwSwapBuffers(display.window);
