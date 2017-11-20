@@ -9,7 +9,7 @@
 
 typedef struct {
 	GLFWwindow *window;
-  float mouse_x, mouse_y;
+  double mouse_x, mouse_y;
 } ex_window_t;
 
 extern ex_window_t display;
@@ -29,6 +29,8 @@ void ex_mouse_callback(GLFWwindow* window, double x, double y);
 void ex_resize_callback(GLFWwindow* window, int width, int height);
 
 EM_BOOL ex_ehandle_keys(int type, const EmscriptenKeyboardEvent *e, void *user_data);
+
+EM_BOOL ex_ehandle_mouse(int type, const EmscriptenMouseEvent *e, void *user_data);
 
 /**
  * [ex_window_init creates the window and gl context]

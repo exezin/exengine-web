@@ -53,17 +53,23 @@ int ex_window_init(uint32_t width, uint32_t height, const char *title)
   emscripten_set_keypress_callback(0, 0, 1, ex_ehandle_keys);
   emscripten_set_keydown_callback(0, 0, 1, ex_ehandle_keys);
   emscripten_set_keyup_callback(0, 0, 1, ex_ehandle_keys);
+  emscripten_set_mousemove_callback(0, 0, 1, ex_ehandle_mouse);
+  emscripten_set_click_callback(0, 0, 1, ex_ehandle_mouse);
+  emscripten_set_mousedown_callback(0, 0, 1, ex_ehandle_mouse);
+  emscripten_set_mouseup_callback(0, 0, 1, ex_ehandle_mouse);
+  emscripten_set_dblclick_callback(0, 0, 1, ex_ehandle_mouse);
 
   return 1;
 }
 
 void ex_window_begin()
 {
-  glfwSetInputMode(display.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+  glfwPollEvents();
 }
 
 void ex_window_end()
 {
+  glfwSwapBuffers(display.window);
 }
 
 void ex_window_destroy()
@@ -120,6 +126,15 @@ void ex_scroll_callback(GLFWwindow *window, double xoffset, double yoffset)
 EM_BOOL ex_ehandle_keys(int type, const EmscriptenKeyboardEvent *e, void *user_data)
 {
   // prevent scrolling with arrow keys and stuff when focused
+  if (glfwGetInputMode(display.window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED)
+    return 1;
+
+  return 0;
+}
+
+EM_BOOL ex_ehandle_mouse(int type, const EmscriptenMouseEvent *e, void *user_data)
+{
+  // prevent scrolling and stuff when focused
   if (glfwGetInputMode(display.window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED)
     return 1;
 

@@ -9,7 +9,7 @@
 
 typedef struct {
   vec3 position, front, up;
-  float yaw, pitch, last_x, last_y, fov, sensitivity;
+  double yaw, pitch, last_x, last_y, sensitivity, fov;
   mat4x4 view, projection;
   int width, height;
 } ex_fps_camera_t;
@@ -20,7 +20,7 @@ typedef struct {
  * @param  y [y position]
  * @param  z [z position]
  */
-ex_fps_camera_t* ex_fps_camera_new(float x, float y, float z, float sensitivity, float fov);
+ex_fps_camera_t* ex_fps_camera_new(float x, float y, float z, double sensitivity, double fov);
 
 /**
  * [iso_cam_resize reset projections etc]

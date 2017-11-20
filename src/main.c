@@ -31,7 +31,7 @@ int main()
   shader = ex_shader_compile("data/shader.vs", "data/shader.fs");
 
   // setup a fps camera
-  camera = ex_fps_camera_new(-1.5f, 1.0f, 0.0f, 0.1f, 75.0f);
+  camera = ex_fps_camera_new(-1.5f, 1.0f, 0.0f, 0.1, 90.0);
 
   // setup the scene
   scene = ex_scene_new(shader);
@@ -52,8 +52,10 @@ int main()
 
 void do_frame()
 {
+  ex_window_begin();
+
   // delta time shiz
-  double current_frame_time = glfwGetTime();
+  double current_frame_time = (double)glfwGetTime();
   delta_time = current_frame_time - last_frame_time;
   last_frame_time = current_frame_time;
 
@@ -62,23 +64,23 @@ void do_frame()
     // move the camera with wasd
     vec3 speed, side;
     if (ex_keys_down[GLFW_KEY_W]) {
-      vec3_scale(speed, camera->front, 0.2f);
+      vec3_scale(speed, camera->front, 16.0f * phys_delta_time);
       vec3_add(camera->position, camera->position, speed);
     }
     if (ex_keys_down[GLFW_KEY_S]) {
-      vec3_scale(speed, camera->front, 0.2f);
+      vec3_scale(speed, camera->front, 16.0f * phys_delta_time);
       vec3_sub(camera->position, camera->position, speed);
     }
     if (ex_keys_down[GLFW_KEY_A]) {
       vec3_mul_cross(side, camera->front, camera->up);
       vec3_norm(side, side);
-      vec3_scale(side, side, 0.2f);
+      vec3_scale(side, side, 16.0f * phys_delta_time);
       vec3_sub(camera->position, camera->position, side);
     }
     if (ex_keys_down[GLFW_KEY_D]) {
       vec3_mul_cross(side, camera->front, camera->up);
       vec3_norm(side, side);
-      vec3_scale(side, side, 0.2f);
+      vec3_scale(side, side, 16.0f * phys_delta_time);
       vec3_add(camera->position, camera->position, side);
     }
     
@@ -90,5 +92,5 @@ void do_frame()
   // render scene
   ex_scene_draw(scene);
 
-  glfwSwapBuffers(display.window);
+  ex_window_end();
 }

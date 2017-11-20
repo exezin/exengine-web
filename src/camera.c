@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 
-ex_fps_camera_t* ex_fps_camera_new(float x, float y, float z, float sensitivity, float fov)
+ex_fps_camera_t* ex_fps_camera_new(float x, float y, float z, double sensitivity, double fov)
 {
   ex_fps_camera_t *c = malloc(sizeof(ex_fps_camera_t));
 
@@ -33,6 +33,8 @@ ex_fps_camera_t* ex_fps_camera_new(float x, float y, float z, float sensitivity,
   mat4x4_identity(c->view);
   mat4x4_identity(c->projection);
 
+  ex_fps_camera_resize(c);
+
   return c;
 }
 
@@ -50,13 +52,11 @@ void ex_fps_camera_resize(ex_fps_camera_t *cam)
 
 void ex_fps_camera_update(ex_fps_camera_t *cam, GLuint shader_program)
 {
-  ex_fps_camera_resize(cam);
+  double x = display.mouse_x;
+  double y = display.mouse_y;
 
-  float x = display.mouse_x;
-  float y = display.mouse_y;
-
-  float offset_x = x - cam->last_x;
-  float offset_y = cam->last_y - y;
+  double offset_x = x - cam->last_x;
+  double offset_y = cam->last_y - y;
   cam->last_x = x;
   cam->last_y = y;
 
