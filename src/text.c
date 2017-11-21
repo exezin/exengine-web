@@ -104,6 +104,7 @@ ex_font_t* ex_text_load_font(const char *path)
 void ex_text_print(ex_font_t *font, const char *str, float x, float y, float scale, float rot, float ox, float oy, float r, float g, float b)
 {
   // offset origin
+  float dox = ox, doy = oy;
   ox += x;
   oy += y;
 
@@ -114,6 +115,7 @@ void ex_text_print(ex_font_t *font, const char *str, float x, float y, float sca
   glActiveTexture(GL_TEXTURE0);
   glBindVertexArray(font->vao);
 
+  // rotate around origin
   mat4x4_identity(transform);
   mat4x4_translate_in_place(transform, ox, oy, 0.0f);
   mat4x4_rotate_Z(transform, transform, rad(rot));
@@ -137,12 +139,17 @@ void ex_text_print(ex_font_t *font, const char *str, float x, float y, float sca
     // nothing to render for whitespace
     if (str[i] == ' ') {
       // move position for next char
-      x += (ch.advance >> 6) * scale;
+      ox += (ch.advance >> 6) * scale;
       continue;
     }
 
-    float xpos = x + ch.bearing[0] * scale;
-    float ypos = y - (ch.size[1] - ch.bearing[1]) * scale;
+    // char position
+    float xpos = ox + ch.bearing[0] * scale;
+    float ypos = oy - (ch.size[1] - ch.bearing[1]) * scale;
+    
+    // offset for origin-based scaling
+    xpos -= dox * scale;
+    ypos -= doy * scale;
 
     float w = ch.size[0] * scale;
     float h = ch.size[1] * scale;
@@ -167,7 +174,7 @@ void ex_text_print(ex_font_t *font, const char *str, float x, float y, float sca
     glDrawArrays(GL_TRIANGLES, 0, 6);
 
     // move position for next char
-    x += (ch.advance >> 6) * scale;
+    ox += (ch.advance >> 6) * scale;
   }
 
   glBindVertexArray(0);

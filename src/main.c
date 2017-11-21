@@ -100,7 +100,7 @@ void do_frame()
 
   ex_text_print(raleway, "exengine-web 0.1", 16, 16, 0.6f, 0.0f, 0.0f, 0.0f, 1.0f, 0.18f, 0.53f);
 
-  ex_text_print(raleway, "!YEAH BITCH!", 320, 240, 1.0f, cos(glfwGetTime())*360, 128.0f, 16.0f, cos(glfwGetTime()), sin(glfwGetTime()), cos(glfwGetTime()*2.0f));
+  ex_text_print(raleway, "!YEAH BITCH!", 320, 240, cos(glfwGetTime()), cos(glfwGetTime())*360, 128.0f, 12.0f, cos(glfwGetTime()), sin(glfwGetTime()), cos(glfwGetTime()*2.0f));
 
   ex_window_end();
 }
