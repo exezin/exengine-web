@@ -3,6 +3,7 @@
 #include "window.h"
 
 ex_text_t *ex_text;
+mat4x4 transform;
 
 void ex_text_init()
 {
@@ -100,8 +101,12 @@ ex_font_t* ex_text_load_font(const char *path)
   return font;
 }
 
-void ex_text_print(ex_font_t *font, const char *str, float x, float y, float scale, float r, float g, float b)
+void ex_text_print(ex_font_t *font, const char *str, float x, float y, float scale, float rot, float ox, float oy, float r, float g, float b)
 {
+  // offset origin
+  ox += x;
+  oy += y;
+
   glUseProgram(ex_text->shader);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -109,17 +114,32 @@ void ex_text_print(ex_font_t *font, const char *str, float x, float y, float sca
   glActiveTexture(GL_TEXTURE0);
   glBindVertexArray(font->vao);
 
+  mat4x4_identity(transform);
+  mat4x4_translate_in_place(transform, ox, oy, 0.0f);
+  mat4x4_rotate_Z(transform, transform, rad(rot));
+
   // send uniforms
-  GLuint color_loc = glGetUniformLocation(ex_text->shader, "u_textcolor");
-  glUniform3f(color_loc, r, g, b);
-  GLuint proj_loc = glGetUniformLocation(ex_text->shader, "u_projection");
-  glUniformMatrix4fv(proj_loc, 1, GL_FALSE, ex_text->projection[0]);
-  GLuint tex_loc = glGetUniformLocation(ex_text->shader, "u_text");
-  glUniform1i(tex_loc, 0);
+  GLuint loc = glGetUniformLocation(ex_text->shader, "u_textcolor");
+  glUniform3f(loc, r, g, b);
+  loc = glGetUniformLocation(ex_text->shader, "u_projection");
+  glUniformMatrix4fv(loc, 1, GL_FALSE, ex_text->projection[0]);
+  loc = glGetUniformLocation(ex_text->shader, "u_text");
+  glUniform1i(loc, 0);
+  loc = glGetUniformLocation(ex_text->shader, "u_model");
+  glUniformMatrix4fv(loc, 1, GL_FALSE, transform[0]);
+  loc = glGetUniformLocation(ex_text->shader, "u_origin");
+  glUniform2f(loc, ox, oy);
 
   // render chars
   for (int i=0; i<strlen(str); i++) {
     ex_char_t ch = font->chars[str[i]];
+    
+    // nothing to render for whitespace
+    if (str[i] == ' ') {
+      // move position for next char
+      x += (ch.advance >> 6) * scale;
+      continue;
+    }
 
     float xpos = x + ch.bearing[0] * scale;
     float ypos = y - (ch.size[1] - ch.bearing[1]) * scale;
