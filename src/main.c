@@ -3,6 +3,7 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <emscripten/emscripten.h>
+#include <ft2build.h>
 
 #include "shader.h"
 #include "window.h"
@@ -10,12 +11,14 @@
 #include "texture.h"
 #include "scene.h"
 #include "iqm.h"
+#include "text.h"
 
 // scene stuff
 GLuint shader;
 ex_fps_camera_t *camera;
 ex_scene_t *scene;
 ex_model_t *dude;
+ex_font_t *raleway;
 
 // timestep stuff
 const double phys_delta_time = 1.0 / 60.0;
@@ -28,7 +31,7 @@ int main()
 {
   ex_window_init(640, 480, "emscripten");
 
-  shader = ex_shader_compile("data/shader.vs", "data/shader.fs");
+  shader = ex_shader_compile("data/shaders/shader.vs", "data/shaders/shader.fs");
 
   // setup a fps camera
   camera = ex_fps_camera_new(-1.5f, 1.0f, 0.0f, 0.1, 90.0);
@@ -45,6 +48,9 @@ int main()
   ex_model_set_anim(dude, 0);
 
   last_frame_time = glfwGetTime();
+
+  // load a font
+  raleway = ex_text_load_font("data/fonts/raleway.ttf");
 
   // start game loop
   emscripten_set_main_loop(do_frame, 0, 0);
@@ -91,6 +97,8 @@ void do_frame()
 
   // render scene
   ex_scene_draw(scene);
+
+  ex_text_print(raleway, "!YEAH BITCH!", 25.0f, 25.0f, 1.0f, cos(glfwGetTime()), sin(glfwGetTime()), cos(glfwGetTime()*2.0f));
 
   ex_window_end();
 }

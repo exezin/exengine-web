@@ -3,6 +3,7 @@
 #include "scene.h"
 #include "model.h"
 #include "window.h"
+#include "text.h"
 
 ex_scene_t* ex_scene_new(GLuint shader)
 {
@@ -15,6 +16,8 @@ ex_scene_t* ex_scene_new(GLuint shader)
   s->fps_camera = NULL;
 
   s->shader = shader;
+
+  ex_text_init();
 
   return s;
 }
@@ -38,6 +41,7 @@ void ex_scene_draw(ex_scene_t *s)
   // main shader
   glUseProgram(s->shader);
   glDisable(GL_BLEND);
+  glEnable(GL_CULL_FACE);
   glCullFace(GL_BACK);
 
   // update camera
