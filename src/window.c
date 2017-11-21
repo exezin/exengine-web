@@ -64,7 +64,9 @@ int ex_window_init(uint32_t width, uint32_t height, const char *title)
 
 void ex_window_begin()
 {
-  glfwPollEvents();
+  // not needed in emscripten?
+  // glfwPollEvents();
+  
   glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }

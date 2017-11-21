@@ -18,13 +18,14 @@ typedef struct {
 extern ex_text_t *ex_text;
 
 typedef struct {
-  GLuint id, advance;
-  vec2 size, bearing;
+  vec2 size, bearing, advance;
+  float xoffset;
 } ex_char_t;
 
 typedef struct {
   ex_char_t chars[128];
-  GLuint vao, vbo;
+  GLuint vao, vbo, atlas;
+  int atlas_width, atlas_height;
 } ex_font_t;
 
 void ex_text_init();

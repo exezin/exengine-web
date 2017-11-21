@@ -43,7 +43,35 @@ ex_font_t* ex_text_load_font(const char *path)
   // force 4-byte alignment
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
+  // calculate atlas size
+  int atlas_width = 0, atlas_height = 0;
+  for (int i=0; i<128; i++) {
+    if (FT_Load_Char(face, i, FT_LOAD_RENDER)) {
+      printf("Failed to load glyph %i for font face %s\n", i, path);
+      continue;
+    }
+
+    // get max width and height
+    // add 1 for padding
+    atlas_width += face->glyph->bitmap.width+1;
+    atlas_height = MAX(atlas_height, face->glyph->bitmap.rows);
+  }
+
+  // create empty texture for atlas
+  glGenTextures(1, &font->atlas);
+  glBindTexture(GL_TEXTURE_2D, font->atlas);
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+  // use GL_ALPHA because GL_RED isnt supported in gles 3.0
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, atlas_width, atlas_height, 0, GL_ALPHA, GL_UNSIGNED_BYTE, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
   // setup glyphs
+  int x = 0;
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, font->atlas);
   for (int i=0; i<128; i++) {
     // load a glyph
     if (FT_Load_Char(face, i, FT_LOAD_RENDER)) {
@@ -51,34 +79,32 @@ ex_font_t* ex_text_load_font(const char *path)
       continue;
     }
 
-    // gen textures
-    // use GL_ALPHA because GL_RED isnt supported in gles 3.0
-    GLuint texture;
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, 
-      face->glyph->bitmap.width,
-      face->glyph->bitmap.rows,
-      0,
-      GL_ALPHA,
-      GL_UNSIGNED_BYTE,
-      face->glyph->bitmap.buffer);
+    if (!face->glyph->bitmap.buffer)
+      continue;
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    // add glyph to font atlas
+    glTexSubImage2D(GL_TEXTURE_2D, 0, x, 0,
+      face->glyph->bitmap.width, face->glyph->bitmap.rows,
+      GL_ALPHA, GL_UNSIGNED_BYTE, face->glyph->bitmap.buffer);
 
     // setup the character
-    font->chars[i].id = texture;
-    font->chars[i].advance = face->glyph->advance.x;
+    font->chars[i].advance[0] = face->glyph->advance.x >> 6;
+    font->chars[i].advance[1] = face->glyph->advance.y >> 6;
     font->chars[i].size[0] = face->glyph->bitmap.width;
     font->chars[i].size[1] = face->glyph->bitmap.rows;
     font->chars[i].bearing[0] = face->glyph->bitmap_left;
     font->chars[i].bearing[1] = face->glyph->bitmap_top;
+    font->chars[i].xoffset = (float)x / atlas_width;
 
-    glBindTexture(GL_TEXTURE_2D, 0);
+    // increase for next glyph
+    // add 1 for texture padding to prevent bleeding
+    x += face->glyph->bitmap.width+1;
+
   }
+  glBindTexture(GL_TEXTURE_2D, 0);
+
+  font->atlas_width = atlas_width;
+  font->atlas_height = atlas_height;
 
   FT_Done_Face(face);
 
@@ -113,6 +139,7 @@ void ex_text_print(ex_font_t *font, const char *str, float x, float y, float sca
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, font->atlas);
   glBindVertexArray(font->vao);
 
   // rotate around origin
@@ -132,6 +159,10 @@ void ex_text_print(ex_font_t *font, const char *str, float x, float y, float sca
   loc = glGetUniformLocation(ex_text->shader, "u_origin");
   glUniform2f(loc, ox, oy);
 
+  // for vertices
+  GLfloat vertices[(6*4) * strlen(str)];
+  int vindex = 0;
+
   // render chars
   for (int i=0; i<strlen(str); i++) {
     ex_char_t ch = font->chars[str[i]];
@@ -139,7 +170,7 @@ void ex_text_print(ex_font_t *font, const char *str, float x, float y, float sca
     // nothing to render for whitespace
     if (str[i] == ' ') {
       // move position for next char
-      ox += (ch.advance >> 6) * scale;
+      ox += ch.advance[0] * scale;
       continue;
     }
 
@@ -155,27 +186,27 @@ void ex_text_print(ex_font_t *font, const char *str, float x, float y, float sca
     float h = ch.size[1] * scale;
 
     // update the vbo
-    GLfloat vertices[6][4] = {
-      {xpos,     ypos + h, 0.0, 0.0},
-      {xpos,     ypos,     0.0, 1.0},
-      {xpos + w, ypos,     1.0, 1.0},
+    float xoffset = ch.xoffset;
+    GLfloat v[6*4] = {
+      xpos,     ypos + h, xoffset, 0.0,
+      xpos,     ypos,     xoffset, ch.size[1] / font->atlas_height,
+      xpos + w, ypos,     xoffset + ch.size[0] / font->atlas_width, ch.size[1] / font->atlas_height,
 
-      {xpos,     ypos + h, 0.0, 0.0},
-      {xpos + w, ypos,     1.0, 1.0},
-      {xpos + w, ypos + h, 1.0, 0.0}
+      xpos,     ypos + h, xoffset, 0.0,
+      xpos + w, ypos,     xoffset + ch.size[0] / font->atlas_width, ch.size[1] / font->atlas_height,
+      xpos + w, ypos + h, xoffset + ch.size[0] / font->atlas_width, 0.0
     };
-
-    glBindTexture(GL_TEXTURE_2D, ch.id);
-    glBindBuffer(GL_ARRAY_BUFFER, font->vbo);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    // finally render dat char
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+    memcpy(&vertices[vindex*(6*4)], v, sizeof(v));
+    vindex++;
 
     // move position for next char
-    ox += (ch.advance >> 6) * scale;
+    ox += ch.advance[0] * scale;
   }
+
+  // finally render dat string
+  glBindBuffer(GL_ARRAY_BUFFER, font->vbo);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
+  glDrawArrays(GL_TRIANGLES, 0, vindex*6);
 
   glBindVertexArray(0);
   glBindTexture(GL_TEXTURE_2D, 0);
