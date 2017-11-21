@@ -55,13 +55,13 @@ void ex_fps_camera_update(ex_fps_camera_t *cam, GLuint shader_program)
   double x = display.mouse_x;
   double y = display.mouse_y;
 
-  double offset_x = x - cam->last_x;
-  double offset_y = cam->last_y - y;
+  float angle = atan2(y - cam->last_y, x - cam->last_x);
+  float dist  = distance(x, y, cam->last_x, cam->last_y);
+
+  double offset_x = (dist * cam->sensitivity) * cos(angle);
+  double offset_y = -(dist * cam->sensitivity) * sin(angle);
   cam->last_x = x;
   cam->last_y = y;
-
-  offset_x *= cam->sensitivity;
-  offset_y *= cam->sensitivity;
 
   cam->yaw += offset_x;
   cam->pitch += offset_y;
