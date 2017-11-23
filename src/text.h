@@ -34,4 +34,8 @@ ex_font_t* ex_text_load_font(const char *path, uint32_t);
 
 void ex_text_print(ex_font_t *font, const char *str, float x, float y, float scale, float rot, float ox, float oy, float r, float g, float b);
 
+void ex_text_destroy_font(ex_font_t *f);
+
+void ex_text_exit();
+
 #endif // EX_TEXT_H

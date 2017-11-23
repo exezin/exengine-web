@@ -215,3 +215,18 @@ void ex_text_print(ex_font_t *font, const char *str, float x, float y, float sca
   glBindTexture(GL_TEXTURE_2D, 0);
   glDisable(GL_BLEND);
 }
+
+void ex_text_destroy_font(ex_font_t *f)
+{
+  glDeleteVertexArrays(1, &f->vao);
+  glDeleteBuffers(1, &f->vbo);
+  free(f);
+  f = NULL;
+}
+
+void ex_text_exit()
+{
+  FT_Done_FreeType(ex_text->freetype);
+  free(ex_text);
+  ex_text = NULL;
+}

@@ -25,6 +25,10 @@ void ex_sound_init();
 
 ex_source_t* ex_sound_load_source(const char *path, ex_sound_e format, int loop);
 
+void ex_sound_destroy(ex_source_t *s);
+
+void ex_sound_exit();
+
 static inline void ex_sound_master_volume(float vol) {
   alListenerf(AL_GAIN, vol);
 };

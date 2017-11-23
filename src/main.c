@@ -31,6 +31,7 @@ const double slowest_frame = 1.0 / 15.0;
 double delta_time, last_frame_time, accumulator = 0.0;
 
 void do_frame();
+void at_exit();
 
 int main()
 {
@@ -66,9 +67,12 @@ int main()
 #ifdef __EMSCRIPTEN__
   emscripten_set_main_loop(do_frame, 0, 0);
 #else
-  for (;;) {
+  while (!glfwWindowShouldClose(display.window)) {
     do_frame();
   }
+
+  at_exit();
+  ex_scene_destroy(scene);
 #endif
 }
 
@@ -120,4 +124,10 @@ void do_frame()
   ex_text_print(raleway, "!TEXTURE ATLAS!", 160, 128, cos(glfwGetTime()), cos(glfwGetTime())*360, 0.0f, 12.0f, cos(glfwGetTime()), sin(glfwGetTime()), cos(glfwGetTime()*2.0f));
 
   ex_window_end();
+}
+
+void at_exit()
+{
+  ex_sound_destroy(sound);
+  ex_text_destroy_font(raleway);
 }

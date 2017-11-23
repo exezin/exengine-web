@@ -143,4 +143,7 @@ void ex_scene_destroy(ex_scene_t *s)
   // cleanup cameras
   if (s->fps_camera != NULL)
     free(s->fps_camera);
+
+  ex_sound_exit();
+  ex_text_exit();
 }

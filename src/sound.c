@@ -83,3 +83,20 @@ ex_source_t* ex_sound_load_source(const char *path, ex_sound_e format, int loop)
 
   return s;
 }
+
+void ex_sound_destroy(ex_source_t *s)
+{
+  alDeleteSources(1, &s->id);
+  alDeleteBuffers(1, &s->buffer);
+  free(s);
+  s = NULL;
+}
+
+void ex_sound_exit()
+{
+  alcMakeContextCurrent(NULL);
+  alcDestroyContext(ex_sound->context);
+  alcCloseDevice(ex_sound->device);
+  free(ex_sound);
+  ex_sound = NULL;
+}
