@@ -5,7 +5,10 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <inttypes.h>
+
+#ifdef __EMSCRIPTEN__
 #include <emscripten/html5.h>
+#endif
 
 typedef struct {
 	GLFWwindow *window;
@@ -28,9 +31,11 @@ void ex_mouse_callback(GLFWwindow* window, double x, double y);
 
 void ex_resize_callback(GLFWwindow* window, int width, int height);
 
+#ifdef __EMSCRIPTEN__
 EM_BOOL ex_ehandle_keys(int type, const EmscriptenKeyboardEvent *e, void *user_data);
 
 EM_BOOL ex_ehandle_mouse(int type, const EmscriptenMouseEvent *e, void *user_data);
+#endif
 
 /**
  * [ex_window_init creates the window and gl context]

@@ -50,6 +50,7 @@ int ex_window_init(uint32_t width, uint32_t height, const char *title)
   glfwSwapInterval(0);
 
   // set html5 key callback
+#ifdef __EMSCRIPTEN__
   emscripten_set_keypress_callback(0, 0, 1, ex_ehandle_keys);
   emscripten_set_keydown_callback(0, 0, 1, ex_ehandle_keys);
   emscripten_set_keyup_callback(0, 0, 1, ex_ehandle_keys);
@@ -58,14 +59,14 @@ int ex_window_init(uint32_t width, uint32_t height, const char *title)
   emscripten_set_mousedown_callback(0, 0, 1, ex_ehandle_mouse);
   emscripten_set_mouseup_callback(0, 0, 1, ex_ehandle_mouse);
   emscripten_set_dblclick_callback(0, 0, 1, ex_ehandle_mouse);
+#endif
 
   return 1;
 }
 
 void ex_window_begin()
 {
-  // not needed in emscripten?
-  // glfwPollEvents();
+  glfwPollEvents();
   
   glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -127,6 +128,7 @@ void ex_scroll_callback(GLFWwindow *window, double xoffset, double yoffset)
 
 }
 
+#ifdef __EMSCRIPTEN__
 EM_BOOL ex_ehandle_keys(int type, const EmscriptenKeyboardEvent *e, void *user_data)
 {
   // prevent scrolling with arrow keys and stuff when focused
@@ -144,3 +146,4 @@ EM_BOOL ex_ehandle_mouse(int type, const EmscriptenMouseEvent *e, void *user_dat
 
   return 0;
 }
+#endif

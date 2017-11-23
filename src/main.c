@@ -2,8 +2,11 @@
 #include <stdio.h>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
-#include <emscripten/emscripten.h>
 #include <ft2build.h>
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten/emscripten.h>
+#endif
 
 #include "shader.h"
 #include "window.h"
@@ -60,7 +63,13 @@ int main()
   ex_sound_master_volume(0.05f);
 
   // start game loop
+#ifdef __EMSCRIPTEN__
   emscripten_set_main_loop(do_frame, 0, 0);
+#else
+  for (;;) {
+    do_frame();
+  }
+#endif
 }
 
 void do_frame()
