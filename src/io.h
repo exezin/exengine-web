@@ -10,7 +10,7 @@
  * @param  mode [access mode]
  * @return      [malloc'd char array, remember to free]
  */
-static char* io_read_file(const char *path, const char *mode)
+static char* io_read_file(const char *path, const char *mode, uint32_t *len)
 {
   // load the file
   FILE *file;
@@ -33,6 +33,9 @@ static char* io_read_file(const char *path, const char *mode)
 
   // null-terminate the buffer
   buff[size] = '\0';
+
+  if (len)
+    *len = size;
 
   fclose(file);
 

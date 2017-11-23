@@ -12,6 +12,7 @@
 #include "scene.h"
 #include "iqm.h"
 #include "text.h"
+#include "sound.h"
 
 // scene stuff
 GLuint shader;
@@ -19,6 +20,7 @@ ex_fps_camera_t *camera;
 ex_scene_t *scene;
 ex_model_t *dude;
 ex_font_t *raleway;
+ex_source_t *sound;
 
 // timestep stuff
 const double phys_delta_time = 1.0 / 60.0;
@@ -50,7 +52,12 @@ int main()
   last_frame_time = glfwGetTime();
 
   // load a font
-  raleway = ex_text_load_font("data/fonts/raleway.ttf");
+  raleway = ex_text_load_font("data/fonts/raleway.ttf", 48);
+
+  // load a sound
+  sound = ex_sound_load_source("data/sound/test.ogg", EX_SOUND_OGG, 1);
+  alSourcePlay(sound->id);
+  ex_sound_master_volume(0.05f);
 
   // start game loop
   emscripten_set_main_loop(do_frame, 0, 0);
@@ -70,23 +77,23 @@ void do_frame()
     // move the camera with wasd
     vec3 speed, side;
     if (ex_keys_down[GLFW_KEY_W]) {
-      vec3_scale(speed, camera->front, 16.0f * phys_delta_time);
+      vec3_scale(speed, camera->front, 8.0f * phys_delta_time);
       vec3_add(camera->position, camera->position, speed);
     }
     if (ex_keys_down[GLFW_KEY_S]) {
-      vec3_scale(speed, camera->front, 16.0f * phys_delta_time);
+      vec3_scale(speed, camera->front, 8.0f * phys_delta_time);
       vec3_sub(camera->position, camera->position, speed);
     }
     if (ex_keys_down[GLFW_KEY_A]) {
       vec3_mul_cross(side, camera->front, camera->up);
       vec3_norm(side, side);
-      vec3_scale(side, side, 16.0f * phys_delta_time);
+      vec3_scale(side, side, 8.0f * phys_delta_time);
       vec3_sub(camera->position, camera->position, side);
     }
     if (ex_keys_down[GLFW_KEY_D]) {
       vec3_mul_cross(side, camera->front, camera->up);
       vec3_norm(side, side);
-      vec3_scale(side, side, 16.0f * phys_delta_time);
+      vec3_scale(side, side, 8.0f * phys_delta_time);
       vec3_add(camera->position, camera->position, side);
     }
     
@@ -101,6 +108,7 @@ void do_frame()
   ex_text_print(raleway, "exengine-web 0.1", 16, 16, 0.6f, 0.0f, 0.0f, 0.0f, 1.0f, 0.18f, 0.53f);
 
   ex_text_print(raleway, "!YEAH BITCH!", 320, 240, cos(glfwGetTime()), cos(glfwGetTime())*360, 128.0f, 12.0f, cos(glfwGetTime()), sin(glfwGetTime()), cos(glfwGetTime()*2.0f));
+  ex_text_print(raleway, "!TEXTURE ATLAS!", 160, 128, cos(glfwGetTime()), cos(glfwGetTime())*360, 0.0f, 12.0f, cos(glfwGetTime()), sin(glfwGetTime()), cos(glfwGetTime()*2.0f));
 
   ex_window_end();
 }

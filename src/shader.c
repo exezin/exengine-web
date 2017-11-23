@@ -6,8 +6,8 @@ GLuint ex_shader_compile(const char *vertex_path, const char *fragment_path)
 
   // load shader files
   char *vertex_source = NULL, *fragment_source = NULL, *geometry_source = NULL;
-  vertex_source = io_read_file(vertex_path, "r");
-  fragment_source = io_read_file(fragment_path, "r");
+  vertex_source = io_read_file(vertex_path, "r", NULL);
+  fragment_source = io_read_file(fragment_path, "r", NULL);
   if (vertex_source == NULL || fragment_source == NULL) {
     printf("Failed creating shader\n");
     

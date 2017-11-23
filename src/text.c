@@ -24,7 +24,7 @@ void ex_text_init()
   mat4x4_ortho(ex_text->projection, 0.0f, width, 0.0f, height, 0.0f, 1.0f);
 }
 
-ex_font_t* ex_text_load_font(const char *path)
+ex_font_t* ex_text_load_font(const char *path, uint32_t size)
 {
   printf("Loading font face %s\n", path);
 
@@ -38,7 +38,7 @@ ex_font_t* ex_text_load_font(const char *path)
     return NULL;
   }
 
-  FT_Set_Pixel_Sizes(face, 0, 48);
+  FT_Set_Pixel_Sizes(face, 0, size);
  
   // force 4-byte alignment
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -160,6 +160,7 @@ void ex_text_print(ex_font_t *font, const char *str, float x, float y, float sca
   glUniform2f(loc, ox, oy);
 
   // for vertices
+  // should probably cache this?
   GLfloat vertices[(6*4) * strlen(str)];
   int vindex = 0;
 
@@ -185,7 +186,7 @@ void ex_text_print(ex_font_t *font, const char *str, float x, float y, float sca
     float w = ch.size[0] * scale;
     float h = ch.size[1] * scale;
 
-    // update the vbo
+    // add vertices for this quad
     float xoffset = ch.xoffset;
     GLfloat v[6*4] = {
       xpos,     ypos + h, xoffset, 0.0,
@@ -196,6 +197,8 @@ void ex_text_print(ex_font_t *font, const char *str, float x, float y, float sca
       xpos + w, ypos,     xoffset + ch.size[0] / font->atlas_width, ch.size[1] / font->atlas_height,
       xpos + w, ypos + h, xoffset + ch.size[0] / font->atlas_width, 0.0
     };
+
+    // add quad to vertices array
     memcpy(&vertices[vindex*(6*4)], v, sizeof(v));
     vindex++;
 

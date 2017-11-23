@@ -4,6 +4,7 @@
 #include "model.h"
 #include "window.h"
 #include "text.h"
+#include "sound.h"
 
 ex_scene_t* ex_scene_new(GLuint shader)
 {
@@ -18,6 +19,7 @@ ex_scene_t* ex_scene_new(GLuint shader)
   s->shader = shader;
 
   ex_text_init();
+  ex_sound_init();
 
   return s;
 }

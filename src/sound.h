@@ -1,0 +1,32 @@
+#ifndef EX_SOUND_H
+#define EX_SOUND_H
+
+#include <inttypes.h>
+#include <AL/al.h>
+#include <AL/alc.h>
+
+typedef struct {
+  ALCdevice *device;
+  ALCcontext *context;
+} ex_sound_t;
+
+typedef struct {
+  ALuint id, buffer;
+} ex_source_t;
+
+typedef enum {
+  EX_SOUND_WAV,
+  EX_SOUND_OGG,
+} ex_sound_e;
+
+extern ex_sound_t *ex_sound;
+
+void ex_sound_init();
+
+ex_source_t* ex_sound_load_source(const char *path, ex_sound_e format, int loop);
+
+static inline void ex_sound_master_volume(float vol) {
+  alListenerf(AL_GAIN, vol);
+};
+
+#endif // EX_SOUND_H
