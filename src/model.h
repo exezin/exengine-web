@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include "mesh.h"
 #include "list.h"
+#include "octree.h"
 
 #define GLEW_STATIC 
 #include <GL/glew.h>
@@ -50,6 +51,8 @@ typedef struct {
 
   vec3 *vertices;
   size_t num_vertices;
+
+  ex_octree_t *octree_data;
 } ex_model_t;
 
 ex_model_t* ex_model_new();

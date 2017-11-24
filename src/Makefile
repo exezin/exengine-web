@@ -4,7 +4,7 @@ CC    =gcc
 FLAGS =-g -lm -lstdc++ -lGL -lGLEW -lglfw -lfreetype -lopenal -I/usr/include/freetype2
 else
 CC    =emcc
-FLAGS =-O2 -s USE_WEBGL2=1 -s USE_GLFW=3 -s USE_FREETYPE=1 -s ALLOW_MEMORY_GROWTH=1 -lopenal --preload-file data
+FLAGS =-s USE_WEBGL2=1 -s USE_GLFW=3 -s USE_FREETYPE=1 -s ALLOW_MEMORY_GROWTH=1 -lopenal --preload-file data
 endif
 
 BDIR  =build
@@ -13,10 +13,10 @@ CFLAGS  =$(FLAGS)
 
 # -- Files -- #
 # deps
-DEPS		=shader.h window.h camera.h texture.h mesh.h model.h iqm.h scene.h text.h sound.h
+DEPS		=shader.h window.h camera.h texture.h mesh.h model.h iqm.h scene.h text.h sound.h octree.h vertices.h entity.h collision.h
 
 # srcs
-_OBJ		=main.o shader.o window.o camera.o texture.o mesh.o model.o iqm.o scene.o text.o sound.o
+_OBJ		=main.o shader.o window.o camera.o texture.o mesh.o model.o iqm.o scene.o text.o sound.o octree.o entity.o collision.o
 OBJ 		=$(patsubst %,$(ODIR)/%,$(_OBJ))
 
 all: files proj

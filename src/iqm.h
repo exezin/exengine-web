@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "octree.h"
 #include "scene.h"
 #include "model.h"
 
@@ -94,7 +95,7 @@ typedef struct {
   uint first_triangle, num_triangles;
 } ex_iqmex_mesh_t;
 
-ex_model_t *ex_iqm_load_model(ex_scene_t *scene, const char *path);
+ex_model_t *ex_iqm_load_model(ex_scene_t *scene, const char *path, int keep_vertices);
 
 static inline uint ex_get_uint(uint8_t *data) { 
   return (data[0] | (data[1] << 8) | (data[2] << 16) | (data[3] << 24));

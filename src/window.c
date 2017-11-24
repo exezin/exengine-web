@@ -9,6 +9,7 @@ int ex_window_init(uint32_t width, uint32_t height, const char *title)
 {
   // init glfw stuffs
   glfwInit();
+  glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
   
   // create glfw window
   display.window = glfwCreateWindow(width, height, title, NULL, NULL);

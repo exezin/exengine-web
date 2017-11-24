@@ -2,7 +2,7 @@
 #include "io.h"
 #include <string.h>
 
-ex_model_t *ex_iqm_load_model(ex_scene_t *scene, const char *path)
+ex_model_t *ex_iqm_load_model(ex_scene_t *scene, const char *path, int keep_vertices)
 {
   printf("Loading IQM model file %s\n", path);
 
@@ -179,6 +179,8 @@ ex_model_t *ex_iqm_load_model(ex_scene_t *scene, const char *path)
   model->bind_pose   = bind_pose;
   model->pose        = pose;
   model->vertices    = NULL;
+  model->vertices = NULL;
+  model->octree_data = NULL;
 
   // calc inverse base pose
   model->inverse_base = NULL;
@@ -235,6 +237,15 @@ ex_model_t *ex_iqm_load_model(ex_scene_t *scene, const char *path)
     // create mesh
     ex_mesh_t *m = ex_mesh_new(vert, meshes[i].num_vertexes, ind, meshes[i].num_triangles*3, 0);
 
+    // store vertices
+    if (keep_vertices) {
+      size_t size = meshes[i].num_triangles*3;
+      for (int j=0; j<size; j++)
+        memcpy(&vis_vertices[vis_len+j], vert[ind[j]].position, sizeof(vec3));
+      
+      vis_len += size;
+    }
+
     // load textures
     if (is_file != NULL)
       m->texture = ex_scene_add_texture(scene, tex_name);
@@ -243,9 +254,18 @@ ex_model_t *ex_iqm_load_model(ex_scene_t *scene, const char *path)
     list_add(model->mesh_list, m);
   }
 
+  // store vertices
+  if (keep_vertices) {
+    model->vertices = malloc(vis_len*sizeof(vec3));
+    model->num_vertices = vis_len;
+    memcpy(model->vertices, vis_vertices, vis_len*sizeof(vec3));
+    ex_scene_add_collision(scene, model);
+  }
+
   printf("Finished loading IQM model %s\n", path);
   free(vertices);
   free(indices);
+  free(vis_vertices);
   free(data);
   return model;
 }
