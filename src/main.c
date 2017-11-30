@@ -26,9 +26,10 @@ ex_model_t *dude, *level;
 ex_font_t *raleway;
 ex_source_t *sound;
 ex_entity_t *player;
+ex_point_light_t *light;
 
 // timestep stuff
-const double phys_delta_time = 1.0 / 60.0;
+const double phys_delta_time = 1.0 / 120.0;
 const double slowest_frame = 1.0 / 15.0;
 double delta_time, last_frame_time, accumulator = 0.0;
 
@@ -78,6 +79,10 @@ int main()
   player->position[0] = 1.1f; 
   player->position[2] = 5.0f;
 
+  // add some lighting to the scene
+  ex_point_light_t *light = ex_point_light_new(player->position, (vec3){10.0f, 0.8f, 0.8f}, 1);
+  ex_scene_add_pointlight(scene, light);
+
   // start game loop
 #ifdef __EMSCRIPTEN__
   emscripten_set_main_loop(do_frame, 0, 0);
@@ -93,15 +98,16 @@ int main()
 
 void do_frame()
 {
-  ex_window_begin();
-
   // delta time shiz
+
   double current_frame_time = (double)glfwGetTime();
   delta_time = current_frame_time - last_frame_time;
   last_frame_time = current_frame_time;
 
   accumulator += delta_time;
   while (accumulator >= phys_delta_time) {
+    ex_window_begin();
+    
     // run update entity doing physics collision etc
     ex_entity_update(player, phys_delta_time);
 
@@ -172,6 +178,9 @@ void do_frame()
   ex_scene_draw(scene);
 
   // woo text
+  char str[64];
+  sprintf(str, "FPS %i", (int)(1.0 / delta_time));
+  ex_text_print(raleway, str, 16, 48, 0.6f, 0.0f, 0.0f, 0.0f, 1.0f, 0.18f, 0.53f);
   ex_text_print(raleway, "exengine-web 0.1", 16, 16, 0.6f, 0.0f, 0.0f, 0.0f, 1.0f, 0.18f, 0.53f);
 
   ex_window_end();

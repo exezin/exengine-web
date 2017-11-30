@@ -25,8 +25,14 @@ ex_scene_t* ex_scene_new(GLuint shader)
   s->collision_built = 0;
   s->coll_vertices_last = 0;
 
+  s->plightc = 0;
+  s->dynplightc = 0;
+
   ex_text_init();
   ex_sound_init();
+  ex_point_light_init();
+  for (int i=0; i<EX_MAX_POINT_LIGHTS; i++)
+    s->point_lights[i] = NULL;
 
   s->primshader = ex_shader_compile("data/shaders/primshader.vs", "data/shaders/primshader.fs");
 
@@ -96,11 +102,34 @@ void ex_scene_build_collision(ex_scene_t *s)
   s->collision_built = 1;
 }
 
+void ex_scene_add_pointlight(ex_scene_t *s, ex_point_light_t *pl)
+{
+  if (pl == NULL)
+    return;
+  
+  if (pl->dynamic && pl->is_shadow)
+    s->dynplightc++;
+  else
+    s->plightc++;
+
+  for (int i=0; i<EX_MAX_POINT_LIGHTS; i++) {
+    if (s->point_lights[i] == NULL) {
+      s->point_lights[i] = pl;
+      return;
+    }
+  }
+
+  printf("Maximum point lights exceeded!\n");
+}
+
 void ex_scene_update(ex_scene_t *s, float delta_time)
 {
   // build collision octree
   if (!s->collision_built)
     ex_scene_build_collision(s);
+
+  if (s->fps_camera)
+    ex_fps_camera_update(s->fps_camera, s->shader);
 
   // update models animations etc
   list_node_t *n = s->model_list;
@@ -112,24 +141,82 @@ void ex_scene_update(ex_scene_t *s, float delta_time)
     else
       break;
   }
+
+  // handle light stuffs
+  ex_scene_manage_lights(s);
 }
 
 void ex_scene_draw(ex_scene_t *s)
 {
-  // main shader
-  glUseProgram(s->shader);
-  glDisable(GL_BLEND);
-  glEnable(GL_CULL_FACE);
+  /*
+  // render pointlight depth maps
   glCullFace(GL_BACK);
+  for (int i=0; i<EX_MAX_POINT_LIGHTS; i++) {
+    ex_point_light_t *l = s->point_lights[i];
+    if (l != NULL && (l->dynamic || l->update) && l->is_shadow && l->is_visible) {
+      ex_point_light_begin(l);
+      ex_scene_render_models(s, l->shader, 1);
+    }
+  }*/
 
-  // update camera
+  // main shader render pass
+  glUseProgram(s->shader);
+  glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+  glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+  glDisable(GL_BLEND);
+
   if (s->fps_camera != NULL) {
-    ex_fps_camera_update(s->fps_camera, s->shader);
     ex_fps_camera_draw(s->fps_camera, s->shader);
   }
 
-  // render scene models
+  /*
+  // do all non shadow casting lights in a single pass
+  // including the one directional light
+  // and lights outside of the shadow render range
+  int pcount = 0;
+  char buff[64];
+  for (int i=0; i<EX_MAX_POINT_LIGHTS; i++) {
+    ex_point_light_t *pl = s->point_lights[i];
+    if (pl == NULL || !pl->is_visible)
+      continue;
+
+    if (!pl->is_shadow || pl->distance_to_cam > EX_POINT_SHADOW_DIST) {
+      sprintf(buff, "u_point_lights[%d]", pcount);
+      // ex_point_light_draw(pl, s->shader, buff);
+      pcount++;
+    }
+  }
+  ex_scene_render_models(s, s->shader, 0);*/
+
+  // do ambient pass
+  glUniform1i(glGetUniformLocation(s->shader, "u_ambient_pass"), 1);
+  glUniform1i(glGetUniformLocation(s->shader, "u_point_active"), 0);
   ex_scene_render_models(s, s->shader, 0);
+
+  // enable blending for second pass onwards
+  glUniform1i(glGetUniformLocation(s->shader, "u_ambient_pass"), 0);
+  glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+  glEnable(GL_BLEND);
+
+  // render all shadow casting point lights
+  for (int i=0; i<EX_MAX_POINT_LIGHTS; i++) {
+    ex_point_light_t *pl = i > EX_MAX_POINT_LIGHTS ? NULL : s->point_lights[i];
+    
+    if (pl == NULL)
+      continue;
+
+    // point light
+    if (pl->is_shadow && pl->distance_to_cam <= EX_POINT_SHADOW_DIST && pl->is_visible) {
+      // glUniform1i(glGetUniformLocation(s->shader, "u_point_active"), 1);
+      // ex_point_light_draw(pl, s->shader, NULL);
+      
+      // one render pass for the light and shadows
+      // ex_scene_render_models(s, s->shader, 0);
+    } else {
+      glUniform1i(glGetUniformLocation(s->shader, "u_point_active"), 0);
+    }
+  }
+  glDisable(GL_BLEND);
 }
 
 void ex_scene_render_models(ex_scene_t *s, GLuint shader, int shadows)
@@ -147,6 +234,39 @@ void ex_scene_render_models(ex_scene_t *s, GLuint shader, int shadows)
       n = n->next;
     else
       break;
+  }
+}
+
+void ex_scene_manage_lights(ex_scene_t *s)
+{
+  // set our position and front vector
+  vec3 thispos, thisfront;
+  if (s->fps_camera != NULL) {
+    memcpy(thisfront, s->fps_camera->front, sizeof(vec3));
+    memcpy(thispos, s->fps_camera->position, sizeof(vec3));
+  }
+
+  // point lights
+  for (int i=0; i<EX_MAX_POINT_LIGHTS; i++) {
+    ex_point_light_t *pl = s->point_lights[i];
+    if (pl == NULL)
+      continue;
+
+    // direction to light
+    vec3 thatpos;
+    vec3_sub(thatpos, pl->position, thispos);
+    pl->distance_to_cam = vec3_len(thatpos);
+    vec3_norm(thatpos, thatpos);
+    vec3_norm(thisfront, thisfront);
+
+    // dot to light
+    float f = vec3_mul_inner(thisfront, thatpos);
+
+    // check if its behind us and far away
+    if (f <= -0.5f && pl->distance_to_cam > EX_POINT_FAR_PLANE)
+      pl->is_visible = 0;
+    else
+      pl->is_visible = 1;
   }
 }
 

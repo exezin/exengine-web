@@ -68,9 +68,6 @@ int ex_window_init(uint32_t width, uint32_t height, const char *title)
 void ex_window_begin()
 {
   glfwPollEvents();
-  
-  glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 void ex_window_end()
@@ -93,8 +90,10 @@ void ex_mouse_callback(GLFWwindow* window, double x, double y)
   if (glfwGetInputMode(display.window, GLFW_CURSOR) != GLFW_CURSOR_DISABLED)
     return;
 
+#ifndef __EMSCRIPTEN__
   display.mouse_x = x;
   display.mouse_y = y;
+#endif
 }
 
 void ex_key_callback(GLFWwindow *window, int key, int scancode, int action, int mode)
@@ -142,8 +141,16 @@ EM_BOOL ex_ehandle_keys(int type, const EmscriptenKeyboardEvent *e, void *user_d
 EM_BOOL ex_ehandle_mouse(int type, const EmscriptenMouseEvent *e, void *user_data)
 {
   // prevent scrolling and stuff when focused
-  if (glfwGetInputMode(display.window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED)
+  if (glfwGetInputMode(display.window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED && type != EMSCRIPTEN_EVENT_MOUSEMOVE)
     return 1;
+
+#ifdef __EMSCRIPTEN__
+  if (type == EMSCRIPTEN_EVENT_MOUSEMOVE && 
+    e->screenX != 0 && e->screenY != 0 && e->clientX != 0 && e->clientY != 0 && e->canvasX != 0 && e->canvasY != 0 && e->targetX != 0 && e->targetY != 0) {
+    display.mouse_x += e->movementX;
+    display.mouse_y += e->movementY;
+  }
+#endif
 
   return 0;
 }

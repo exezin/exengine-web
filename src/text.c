@@ -186,6 +186,9 @@ void ex_text_print(ex_font_t *font, const char *str, float x, float y, float sca
     float w = ch.size[0] * scale;
     float h = ch.size[1] * scale;
 
+    if (!w || !h)
+      continue;
+
     // add vertices for this quad
     float xoffset = ch.xoffset;
     GLfloat v[6*4] = {
