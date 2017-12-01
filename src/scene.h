@@ -8,6 +8,7 @@
 #include "model.h"
 #include "octree.h"
 #include "pointlight.h"
+#include "canvas.h"
 
 #define GLEW_STATIC
 #include <GL/glew.h>
@@ -26,6 +27,7 @@ typedef struct {
   size_t coll_vertices_last;
   vec3 gravity;
   int modelc, plightc, dynplightc;
+  ex_canvas_t *canvas;
 } ex_scene_t;
 
 ex_scene_t* ex_scene_new(GLuint shader);

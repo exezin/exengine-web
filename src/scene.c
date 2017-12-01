@@ -36,6 +36,12 @@ ex_scene_t* ex_scene_new(GLuint shader)
 
   s->primshader = ex_shader_compile("data/shaders/primshader.vs", "data/shaders/primshader.fs");
 
+
+  int w, h;
+  glfwGetFramebufferSize(display.window, &w, &h);
+  ex_canvas_init();
+  s->canvas = ex_canvas_new(w, h, GL_RGBA, GL_RGBA);
+
   return s;
 }
 
@@ -148,28 +154,30 @@ void ex_scene_update(ex_scene_t *s, float delta_time)
 
 void ex_scene_draw(ex_scene_t *s)
 {
-  /*
-  // render pointlight depth maps
+  /* render pointlight depth maps
+  glEnable(GL_CULL_FACE);
   glCullFace(GL_BACK);
   for (int i=0; i<EX_MAX_POINT_LIGHTS; i++) {
     ex_point_light_t *l = s->point_lights[i];
     if (l != NULL && (l->dynamic || l->update) && l->is_shadow && l->is_visible) {
-      ex_point_light_begin(l);
-      ex_scene_render_models(s, l->shader, 1);
+      for (int f=0; f<6; f++) {
+        ex_point_light_begin(l, f);
+        ex_scene_render_models(s, l->shader, 1);
+      }
     }
   }*/
 
   // main shader render pass
   glUseProgram(s->shader);
-  glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-  glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
   glDisable(GL_BLEND);
+
+  // enable main canvas
+  ex_canvas_use(s->canvas);
 
   if (s->fps_camera != NULL) {
     ex_fps_camera_draw(s->fps_camera, s->shader);
   }
-
-  /*
+  
   // do all non shadow casting lights in a single pass
   // including the one directional light
   // and lights outside of the shadow render range
@@ -182,22 +190,23 @@ void ex_scene_draw(ex_scene_t *s)
 
     if (!pl->is_shadow || pl->distance_to_cam > EX_POINT_SHADOW_DIST) {
       sprintf(buff, "u_point_lights[%d]", pcount);
-      // ex_point_light_draw(pl, s->shader, buff);
+      ex_point_light_draw(pl, s->shader, buff);
       pcount++;
     }
   }
-  ex_scene_render_models(s, s->shader, 0);*/
-
-  // do ambient pass
+  glUniform1i(glGetUniformLocation(s->shader, "u_point_count"), pcount);
+  
+  // do ambient pass/non shadow casting lighting
   glUniform1i(glGetUniformLocation(s->shader, "u_ambient_pass"), 1);
   glUniform1i(glGetUniformLocation(s->shader, "u_point_active"), 0);
   ex_scene_render_models(s, s->shader, 0);
-
-  // enable blending for second pass onwards
-  glUniform1i(glGetUniformLocation(s->shader, "u_ambient_pass"), 0);
-  glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+  
+  /* blend everything after here
   glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 
+  glUniform1i(glGetUniformLocation(s->shader, "u_ambient_pass"), 0);
+  glUniform1i(glGetUniformLocation(s->shader, "u_point_count"), 0);
   // render all shadow casting point lights
   for (int i=0; i<EX_MAX_POINT_LIGHTS; i++) {
     ex_point_light_t *pl = i > EX_MAX_POINT_LIGHTS ? NULL : s->point_lights[i];
@@ -207,16 +216,20 @@ void ex_scene_draw(ex_scene_t *s)
 
     // point light
     if (pl->is_shadow && pl->distance_to_cam <= EX_POINT_SHADOW_DIST && pl->is_visible) {
-      // glUniform1i(glGetUniformLocation(s->shader, "u_point_active"), 1);
-      // ex_point_light_draw(pl, s->shader, NULL);
-      
+      glUniform1i(glGetUniformLocation(s->shader, "u_point_active"), 1);
+      ex_point_light_draw(pl, s->shader, NULL);
+
       // one render pass for the light and shadows
-      // ex_scene_render_models(s, s->shader, 0);
+      ex_scene_render_models(s, s->shader, 0);
     } else {
       glUniform1i(glGetUniformLocation(s->shader, "u_point_active"), 0);
     }
-  }
+  }*/
   glDisable(GL_BLEND);
+
+  int w, h;
+  glfwGetFramebufferSize(display.window, &w, &h);
+  ex_canvas_draw(s->canvas, w, h);
 }
 
 void ex_scene_render_models(ex_scene_t *s, GLuint shader, int shadows)
@@ -339,6 +352,8 @@ void ex_scene_destroy(ex_scene_t *s)
   // cleanup cameras
   if (s->fps_camera != NULL)
     free(s->fps_camera);
+
+  ex_canvas_destroy(s->canvas);
 
   ex_sound_exit();
   ex_text_exit();

@@ -71,7 +71,7 @@ int main()
   // load a sound
   sound = ex_sound_load_source("data/sound/test.ogg", EX_SOUND_OGG, 1);
   alSourcePlay(sound->id);
-  ex_sound_master_volume(0.05f);
+  ex_sound_master_volume(0.0f);
 
   // setup the player entity
   player = ex_entity_new(scene, (vec3){0.5f, 1.0f, 0.5f});
@@ -80,8 +80,11 @@ int main()
   player->position[2] = 5.0f;
 
   // add some lighting to the scene
-  ex_point_light_t *light = ex_point_light_new(player->position, (vec3){10.0f, 0.8f, 0.8f}, 1);
+  ex_point_light_t *light = ex_point_light_new(player->position, (vec3){5.0f, 0.8f, 0.8f}, 1);
   ex_scene_add_pointlight(scene, light);
+  // light->position[1] = 5.0f;
+  ex_point_light_t *light2 = ex_point_light_new((vec3){5.0f, 1.1f, -5.0f}, (vec3){0.5f, 0.8f, 5.0f}, 1);
+  ex_scene_add_pointlight(scene, light2);
 
   // start game loop
 #ifdef __EMSCRIPTEN__

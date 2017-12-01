@@ -13,6 +13,9 @@ out vec4 frag;
 uniform mat4 u_model;
 uniform mat4 u_bone_matrix[200];
 uniform bool u_has_skeleton;
+uniform mat4 u_shadow_matrices[6];
+
+uniform int u_face;
 
 void main()
 {
@@ -28,6 +31,6 @@ void main()
     transform = u_model * skeleton;
   }
 
-	gl_Position = transform * vec4(in_position, 1.0);
+	gl_Position = u_shadow_matrices[u_face] * transform * vec4(in_position, 1.0);
   frag = gl_Position;
 }

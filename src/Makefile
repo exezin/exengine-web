@@ -13,10 +13,10 @@ CFLAGS  =$(FLAGS)
 
 # -- Files -- #
 # deps
-DEPS		=shader.h window.h camera.h texture.h mesh.h model.h iqm.h scene.h text.h sound.h octree.h vertices.h entity.h collision.h pointlight.h
+DEPS		=shader.h window.h camera.h texture.h mesh.h model.h iqm.h scene.h text.h sound.h octree.h vertices.h entity.h collision.h pointlight.h canvas.h
 
 # srcs
-_OBJ		=main.o shader.o window.o camera.o texture.o mesh.o model.o iqm.o scene.o text.o sound.o octree.o entity.o collision.o pointlight.o
+_OBJ		=main.o shader.o window.o camera.o texture.o mesh.o model.o iqm.o scene.o text.o sound.o octree.o entity.o collision.o pointlight.o canvas.o
 OBJ 		=$(patsubst %,$(ODIR)/%,$(_OBJ))
 
 all: files proj
