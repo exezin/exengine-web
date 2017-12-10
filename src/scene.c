@@ -154,7 +154,7 @@ void ex_scene_update(ex_scene_t *s, float delta_time)
 
 void ex_scene_draw(ex_scene_t *s)
 {
-  /* render pointlight depth maps
+  // render pointlight depth maps
   glEnable(GL_CULL_FACE);
   glCullFace(GL_BACK);
   for (int i=0; i<EX_MAX_POINT_LIGHTS; i++) {
@@ -165,7 +165,7 @@ void ex_scene_draw(ex_scene_t *s)
         ex_scene_render_models(s, l->shader, 1);
       }
     }
-  }*/
+  }
 
   // main shader render pass
   glUseProgram(s->shader);
@@ -201,12 +201,12 @@ void ex_scene_draw(ex_scene_t *s)
   glUniform1i(glGetUniformLocation(s->shader, "u_point_active"), 0);
   ex_scene_render_models(s, s->shader, 0);
   
-  /* blend everything after here
+  // blend everything after here
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-
   glUniform1i(glGetUniformLocation(s->shader, "u_ambient_pass"), 0);
   glUniform1i(glGetUniformLocation(s->shader, "u_point_count"), 0);
+  
   // render all shadow casting point lights
   for (int i=0; i<EX_MAX_POINT_LIGHTS; i++) {
     ex_point_light_t *pl = i > EX_MAX_POINT_LIGHTS ? NULL : s->point_lights[i];
@@ -224,7 +224,7 @@ void ex_scene_draw(ex_scene_t *s)
     } else {
       glUniform1i(glGetUniformLocation(s->shader, "u_point_active"), 0);
     }
-  }*/
+  }
   glDisable(GL_BLEND);
 
   int w, h;

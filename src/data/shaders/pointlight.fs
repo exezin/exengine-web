@@ -10,9 +10,9 @@ uniform bool u_is_lit;
 
 void main()
 {
-  // if (!u_is_lit) {
-    // discard;
-  // }
+  if (!u_is_lit) {
+    discard;
+  }
 
   float light_distance = length(frag.xyz - u_light_pos);
 

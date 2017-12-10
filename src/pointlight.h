@@ -6,7 +6,7 @@
 
 #include "math.h"
 
-#define EX_POINT_FAR_PLANE 25
+#define EX_POINT_FAR_PLANE 75
 #define EX_POINT_SHADOW_DIST 150
 
 typedef struct {

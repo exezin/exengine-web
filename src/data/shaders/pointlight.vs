@@ -13,24 +13,20 @@ out vec4 frag;
 uniform mat4 u_model;
 uniform mat4 u_bone_matrix[200];
 uniform bool u_has_skeleton;
-uniform mat4 u_shadow_matrices[6];
-
-uniform int u_face;
+uniform mat4 u_shadow_matrice;
 
 void main()
 {
 	mat4 transform = u_model;
   if (u_has_skeleton == true) {
-    vec4 boneindex = in_boneindex*255.0;
-    vec4 boneweights = in_boneweights*255.0;
-    mat4 skeleton = u_bone_matrix[int(boneindex.x)] * boneweights.x +
-                    u_bone_matrix[int(boneindex.y)] * boneweights.y +
-                    u_bone_matrix[int(boneindex.z)] * boneweights.z +
-                    u_bone_matrix[int(boneindex.w)] * boneweights.w;
+    mat4 skeleton = u_bone_matrix[int(in_boneindex.x*255.0f)] * in_boneweights.x +
+                    u_bone_matrix[int(in_boneindex.y*255.0f)] * in_boneweights.y +
+                    u_bone_matrix[int(in_boneindex.z*255.0f)] * in_boneweights.z +
+                    u_bone_matrix[int(in_boneindex.w*255.0f)] * in_boneweights.w;
 
     transform = u_model * skeleton;
   }
 
-	gl_Position = u_shadow_matrices[u_face] * transform * vec4(in_position, 1.0);
-  frag = gl_Position;
+	gl_Position = u_shadow_matrice * transform * vec4(in_position, 1.0);
+  frag = transform * vec4(in_position, 1.0f);
 }

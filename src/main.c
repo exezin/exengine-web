@@ -26,7 +26,7 @@ ex_model_t *dude, *level;
 ex_font_t *raleway;
 ex_source_t *sound;
 ex_entity_t *player;
-ex_point_light_t *light;
+ex_point_light_t *plight;
 
 // timestep stuff
 const double phys_delta_time = 1.0 / 60.0;
@@ -80,11 +80,14 @@ int main()
   player->position[2] = 5.0f;
 
   // add some lighting to the scene
-  ex_point_light_t *light = ex_point_light_new(player->position, (vec3){5.0f, 0.8f, 0.8f}, 1);
+  ex_point_light_t *light = ex_point_light_new(player->position, (vec3){0.8f, 0.8f, 0.8f}, 1);
+  light->position[1] = 5.0f;
   ex_scene_add_pointlight(scene, light);
-  // light->position[1] = 5.0f;
-  ex_point_light_t *light2 = ex_point_light_new((vec3){5.0f, 1.1f, -5.0f}, (vec3){0.5f, 0.8f, 5.0f}, 1);
+  ex_point_light_t *light2 = ex_point_light_new((vec3){-2.5f, 5.0f, -20.0f}, (vec3){1.0f, 1.0f, 1.5f}, 1);
   ex_scene_add_pointlight(scene, light2);
+  plight = ex_point_light_new((vec3){0.0f, 0.0f, 0.0f}, (vec3){0.3f, 0.3f, 0.3f}, 0);
+  plight->is_shadow = 0;
+  ex_scene_add_pointlight(scene, plight);
 
   // start game loop
 #ifdef __EMSCRIPTEN__
@@ -118,6 +121,8 @@ void do_frame()
     memcpy(camera->position, player->position, sizeof(vec3));
     camera->position[1] += player->radius[1];
 
+    memcpy(plight->position, player->position, sizeof(vec3));
+    
     // some basics fps movement
     vec3 temp;
     vec3_scale(temp, player->velocity, 25.0f * phys_delta_time);

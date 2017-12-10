@@ -29,14 +29,14 @@ uniform int         u_point_count;
 uniform bool        u_point_active;
 /* ------------ */
 
-/*vec3 pcf_offset[20] = vec3[]
+vec3 pcf_offset[20] = vec3[]
 (
   vec3( 1,  1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1,  1,  1), 
   vec3( 1,  1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1,  1, -1),
   vec3( 1,  1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), vec3(-1,  1,  0),
   vec3( 1,  0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1,  0, -1),
   vec3( 0,  1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0,  1, -1)
-);*/
+);
 
 vec3 calc_point_light(point_light l)
 {
@@ -53,10 +53,10 @@ vec3 calc_point_light(point_light l)
   vec3 diffuse   = max(dot(light_dir, norm), 0.0) * diff * l.color;
 
   // attenuation
-  float attenuation = 1.0f / distance;
+  float attenuation = 1.0f / (1.0f + 0.1f*distance + (0.01*distance*distance));
   diffuse  *= attenuation;
 
-  /* shadows AFIJ)FGHWAFHWA FFFFF
+  // shadows AFIJ)FGHWAFHWA FFFFF
   float shadow = 0.0f;
   if (l.is_shadow) {
     float costheta = clamp(dot(norm, light_dir), 0.0, 1.0);
@@ -75,32 +75,19 @@ vec3 calc_point_light(point_light l)
     for (int i=0; i<samples; ++i) {
       closest_depth  = texture(u_point_depth, frag_to_light + pcf_offset[i] * radius).r;
       closest_depth *= l.far;
-      if (current_depth > closest_depth)
+      if (current_depth - bias > closest_depth)
         shadow += 1.0;
     }
     shadow /= float(samples);
+  }
 
-    // closest_depth = texture(u_point_depth, frag_to_light).r;
-    // closest_depth *= l.far;
-    // shadow = current_depth > closest_depth ? 1.0 : 0.0;
-    // return vec3(closest_depth/l.far);
-  }*/
-
-  return vec3(diffuse);
+  return vec3((1.0 - shadow) * diffuse);
 }
 
 void main()
 {
-  color = texture(u_texture, uv) * 0.2f;
-
-  // non shadow casters
-  if (u_point_count > 0)
-    for (int i=0; i<u_point_count; i++)
-      color += vec4(calc_point_light(u_point_lights[i]), 1.0f);
- 
-  // ALL FUCKED
-  /*if (u_ambient_pass) {
-    color = texture(u_texture, uv) * 0.0f;
+  if (u_ambient_pass) {
+    color = texture(u_texture, uv) * 0.1f;
 
     // non shadow casters
     if (u_point_count > 0)
@@ -110,9 +97,9 @@ void main()
   } else {
     vec3 diffuse = vec3(0.0);
 
-    // if (u_point_active && u_point_count <= 0)
+    if (u_point_active && u_point_count <= 0)
       diffuse += calc_point_light(u_point_light);
 
     color = vec4(diffuse, 1.0);
-  }*/
+  }
 }
