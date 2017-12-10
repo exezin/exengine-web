@@ -2,7 +2,7 @@
 #include "vertices.h"
 #include <stdio.h>
 
-float ex_octree_min_size = EX_OCTREE_DEFAULT_MIN_SIZE;
+int ex_octree_min_size = EX_OCTREE_DEFAULT_MIN_SIZE;
 
 ex_octree_t* ex_octree_new(uint8_t type)
 {
@@ -33,7 +33,7 @@ ex_octree_t* ex_octree_new(uint8_t type)
 
 void ex_octree_init(ex_octree_t *o, ex_rect_t region, list_t *objects)
 {
-  memcpy(&o->region, &region, sizeof(region));
+  memcpy(&o->region, &region, sizeof(ex_rect_t));
   for (int i=0; i<8; i++) {
     o->children[i] = NULL;
   }
@@ -101,13 +101,12 @@ void ex_octree_build(ex_octree_t *o)
     int found = 0;
 
     for (int j=0; j<8; j++) {
-      ex_octree_obj_t *obj = n->data;
+      ex_octree_obj_t *obj = (ex_octree_obj_t*)n->data;
       if (ex_aabb_inside(octants[j], obj->box)) {
         list_add(obj_lists[j], (void*)n->data);
         obj_lenghts[j]++;
         found = 1;
         break;
-        // obj should be added to node its most in by % ?
       }
     }
 
@@ -165,22 +164,22 @@ void ex_octree_finalize(ex_octree_t *o)
       case OBJ_TYPE_INT:
         if (i == 0)
           o->data_int    = malloc(o->data_len * sizeof(int32_t));
-        memcpy(&o->data_int[i], &data->data_uint, sizeof(int32_t));
+        memcpy(&o->data_int[i], &data->data_int, sizeof(int32_t));
         break;
       case OBJ_TYPE_BYTE:
         if (i == 0)
           o->data_byte   = malloc(o->data_len * sizeof(uint8_t));
-        memcpy(&o->data_byte[i], &data->data_uint, sizeof(uint8_t));
+        memcpy(&o->data_byte[i], &data->data_byte, sizeof(uint8_t));
         break;
       case OBJ_TYPE_FLOAT:
         if (i == 0)
           o->data_float  = malloc(o->data_len * sizeof(float));
-        memcpy(&o->data_float[i], &data->data_uint, sizeof(float));
+        memcpy(&o->data_float[i], &data->data_float, sizeof(float));
         break;
       case OBJ_TYPE_DOUBLE:
         if (i == 0)
           o->data_double = malloc(o->data_len * sizeof(double));
-        memcpy(&o->data_double[i], &data->data_uint, sizeof(double));
+        memcpy(&o->data_double[i], &data->data_double, sizeof(double));
         break;
     }
 
@@ -228,12 +227,12 @@ ex_octree_t* ex_octree_reset(ex_octree_t *o)
         break;
       case OBJ_TYPE_BYTE:
         if (o->data_byte != NULL)
-          free(o->data_byte);
+          free(o->data_byte); 
         break;
       case OBJ_TYPE_FLOAT:
         if (o->data_float != NULL)
           free(o->data_float);
-        break;
+        break; 
       case OBJ_TYPE_DOUBLE:
         if (o->data_double != NULL)
           free(o->data_double);
@@ -258,7 +257,7 @@ ex_octree_t* ex_octree_reset(ex_octree_t *o)
   return o;
 }
 
-void ex_octree_get_colliding(ex_octree_t *o, ex_rect_t *bounds, list_t *data_list)
+void ex_octree_get_colliding_count(ex_octree_t *o, ex_rect_t *bounds, int *count)
 {
   if (o == NULL)
     return;
@@ -269,14 +268,33 @@ void ex_octree_get_colliding(ex_octree_t *o, ex_rect_t *bounds, list_t *data_lis
     if (!ex_aabb_aabb(o->region, *bounds))
       return;
 
-    ex_octree_data_t *data = malloc(sizeof(ex_octree_data_t));
-    data->len  = o->data_len;
-    data->data = oct_data;
-    list_add(data_list, data);
+    (*count)++;
   }
 
   // recurse adding data to the list
   for (int i=0; i<8; i++)
     if (o->children[i] != NULL)
-      ex_octree_get_colliding(o->children[i], bounds, data_list);
+      ex_octree_get_colliding_count(o->children[i], bounds, count);
+}
+
+void ex_octree_get_colliding(ex_octree_t *o, ex_rect_t *bounds, ex_octree_data_t *data_list, int *index)
+{
+  if (o == NULL)
+    return;
+
+  // add our data to the list
+  void *oct_data = ex_octree_data_ptr(o);
+  if (oct_data != NULL) {
+    if (!ex_aabb_aabb(o->region, *bounds))
+      return;
+
+    data_list[*index].len = o->data_len;
+    data_list[*index].data = oct_data;
+    (*index)++;
+  }
+
+  // recurse adding data to the list
+  for (int i=0; i<8; i++)
+    if (o->children[i] != NULL)
+      ex_octree_get_colliding(o->children[i], bounds, data_list, index);
 }

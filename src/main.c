@@ -29,7 +29,7 @@ ex_entity_t *player;
 ex_point_light_t *light;
 
 // timestep stuff
-const double phys_delta_time = 1.0 / 120.0;
+const double phys_delta_time = 1.0 / 60.0;
 const double slowest_frame = 1.0 / 15.0;
 double delta_time, last_frame_time, accumulator = 0.0;
 
@@ -132,8 +132,7 @@ void do_frame()
     }
     
     // do gravity
-    if (player->grounded == 0)
-      player->velocity[1] -= (100.0f * phys_delta_time);
+    player->velocity[1] -= (100.0f * phys_delta_time);
     if (player->velocity[1] <= 0.0f && player->grounded)
       player->velocity[1] = 0.0f;
 
