@@ -8,15 +8,15 @@
 #include <emscripten/emscripten.h>
 #endif
 
-#include "shader.h"
-#include "window.h"
-#include "camera.h"
-#include "texture.h"
-#include "scene.h"
-#include "iqm.h"
-#include "text.h"
-#include "sound.h"
-#include "entity.h"
+#include "exengine/shader.h"
+#include "exengine/window.h"
+#include "exengine/camera.h"
+#include "exengine/texture.h"
+#include "exengine/scene.h"
+#include "exengine/iqm.h"
+#include "exengine/text.h"
+#include "exengine/sound.h"
+#include "exengine/entity.h"
 
 // scene stuff
 GLuint shader;

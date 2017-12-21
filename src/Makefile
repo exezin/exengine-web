@@ -7,22 +7,31 @@ CC    =emcc
 FLAGS =-s USE_WEBGL2=1 -s USE_GLFW=3 -s USE_FREETYPE=1 -s ALLOW_MEMORY_GROWTH=1 -lopenal --preload-file data
 endif
 
+EDIR  =exengine
 BDIR  =build
 ODIR 	=obj
 CFLAGS  =$(FLAGS)
 
 # -- Files -- #
-# deps
-DEPS		=shader.h window.h camera.h texture.h mesh.h model.h iqm.h scene.h text.h sound.h octree.h vertices.h entity.h collision.h pointlight.h canvas.h
+_EDEPS =camera.h io.h mesh.h scene.h text.h canvas.h collision.h entity.h iqm.h list.h math.h \
+model.h octree.h pointlight.h shader.h sound.h stb_image.h text.h texture.h vertices.h window.h
+EDEPS  =$(patsubst %,$(EDIR)/%,$(_EDEPS))
 
-# srcs
+# user deps
+DEPS		=
+
+# all srcs
 _OBJ		=main.o shader.o window.o camera.o texture.o mesh.o model.o iqm.o scene.o text.o sound.o octree.o entity.o collision.o pointlight.o canvas.o
 OBJ 		=$(patsubst %,$(ODIR)/%,$(_OBJ))
 
 all: files proj
 
-# srcs
+# usr srcs
 $(ODIR)/%.o: %.c $(DEPS)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+# engine srcs
+$(ODIR)/%.o: $(EDIR)/%.c $(EDEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 proj: $(OBJ)
