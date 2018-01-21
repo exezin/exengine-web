@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>exengine</title>
+    <style>
+      .emscripten { padding-right: 0; margin-left: auto; margin-right: auto; display: block;}
+      textarea.emscripten { font-family: monospace; width: 80%; }
+      div.emscripten { text-align: center; }
+
+      /* !dont use a border or padding on canvas! */
+      canvas.emscripten { border: 0px none; background-color: black; }
+      
+      /* uncomment for a fullscreen canvas */
+      /* .emscripten { padding-right: 0; margin-left: 0; margin-right: 0; }
+      body { margin: 0; }
+      input {display: none; } */
+      </style>
+  </head>
+
+  <body>
+    <!-- the webgl html5 canvas -->
+    <div class="emscripten_border">
+      <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+    </div>
+
+    <!-- fullscreen button -->
+    <div class="emscripten">
+      <input type="button" value="Fullscreen" onclick="Module.requestFullscreen()">
+    </div>
+
+    <!-- script to run the game -->
+    <script language="javascript" type="text/javascript">
+      var Module = {
+        preRun: [],
+        postRun: [],
+        print: (function() {
+          var element = document.getElementById('output');
+          return function(text) {
+            element.innerHTML += text.replace('\n', '<br>', 'g') + '<br>';
+          };
+        })(),
+        printErr: function(text) {
+          console.error(text);
+        },
+        print: function(text) {
+          console.log(text);
+        },
+        canvas: (function() {
+          var canvas = document.getElementById('canvas');
+          canvas.addEventListener("webglcontextlost", function(e) { alert('WebGL context lost. You will need to reload the page.'); e.preventDefault(); }, false);
+          return canvas;
+        })(),
+      };
+    </script>
+    {{{ SCRIPT }}}
+  </body>
+</html>

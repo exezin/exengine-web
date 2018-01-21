@@ -8,5 +8,5 @@ emmake make
 # work with data in its immediate dir >_>
 cd build
 mv proj proj.bc
-emcc -O2 -s USE_WEBGL2=$USE_WEBGL2 -s USE_GLFW=3 -s USE_FREETYPE=1 -s ALLOW_MEMORY_GROWTH=1 -lopenal --preload-file data proj.bc -o index.html
+emcc -O2 -s USE_WEBGL2=$USE_WEBGL2 -s USE_GLFW=3 -s USE_FREETYPE=1 -s ALLOW_MEMORY_GROWTH=1 -lopenal --shell-file data/template.html --preload-file data proj.bc -o index.html
 cd ..
