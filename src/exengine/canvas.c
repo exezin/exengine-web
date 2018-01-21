@@ -3,6 +3,8 @@
 #include "engine.h"
 
 GLuint shader;
+GLuint texture_loc;
+int canvas_cached = 0;
 
 /* -- screen quad -- */
 GLuint vao, vbo;
@@ -127,7 +129,11 @@ void ex_canvas_draw(ex_canvas_t *c, uint32_t width, uint32_t height)
   // render quad to screen
   glBindVertexArray(vao);
   glActiveTexture(GL_TEXTURE0);
-  glUniform1i(glGetUniformLocation(shader, "u_texture"), 0);
+  if (!canvas_cached) {
+    texture_loc = glGetUniformLocation(shader, "u_texture");
+    canvas_cached = 1;
+  }
+  glUniform1i(texture_loc, 0);
   glBindTexture(GL_TEXTURE_2D, c->cbo);
   glDrawArrays(GL_TRIANGLES, 0, 6);
   glBindVertexArray(0);

@@ -5,6 +5,9 @@
 ex_text_t *ex_text;
 mat4x4 transform;
 
+GLuint color_loc, proj_loc, text_loc, model_loc, origin_loc;
+int text_cached = 0;
+
 void ex_text_init()
 {
   // init freetype and our text object
@@ -147,17 +150,22 @@ void ex_text_print(ex_font_t *font, const char *str, float x, float y, float sca
   mat4x4_translate_in_place(transform, ox, oy, 0.0f);
   mat4x4_rotate_Z(transform, transform, rad(rot));
 
+  if (!text_cached) {
+    color_loc = glGetUniformLocation(ex_text->shader, "u_textcolor");
+    proj_loc = glGetUniformLocation(ex_text->shader, "u_projection");
+    text_loc = glGetUniformLocation(ex_text->shader, "u_text");
+    model_loc = glGetUniformLocation(ex_text->shader, "u_model");
+    origin_loc = glGetUniformLocation(ex_text->shader, "u_origin");
+    
+    text_cached = 1;
+  }
+
   // send uniforms
-  GLuint loc = glGetUniformLocation(ex_text->shader, "u_textcolor");
-  glUniform3f(loc, r, g, b);
-  loc = glGetUniformLocation(ex_text->shader, "u_projection");
-  glUniformMatrix4fv(loc, 1, GL_FALSE, ex_text->projection[0]);
-  loc = glGetUniformLocation(ex_text->shader, "u_text");
-  glUniform1i(loc, 0);
-  loc = glGetUniformLocation(ex_text->shader, "u_model");
-  glUniformMatrix4fv(loc, 1, GL_FALSE, transform[0]);
-  loc = glGetUniformLocation(ex_text->shader, "u_origin");
-  glUniform2f(loc, ox, oy);
+  glUniform3f(color_loc, r, g, b);
+  glUniformMatrix4fv(proj_loc, 1, GL_FALSE, ex_text->projection[0]);
+  glUniform1i(text_loc, 0);
+  glUniformMatrix4fv(model_loc, 1, GL_FALSE, transform[0]);
+  glUniform2f(origin_loc, ox, oy);
 
   // for vertices
   // should probably cache this?

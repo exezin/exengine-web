@@ -3,6 +3,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+GLuint diffuse_loc[2], spec_loc[2], norm_loc[2], is_lit_loc[2], is_texture_loc[2], is_spec_loc[2], is_norm_loc[2], transform_loc[2];
+GLuint mesh_cached[2] = {0, 0};
+
 ex_mesh_t* ex_mesh_new(ex_vertex_t* vertices, size_t vcount, GLuint *indices, size_t icount, GLuint texture)
 {
   ex_mesh_t* m = malloc(sizeof(ex_mesh_t));
@@ -82,44 +85,64 @@ void ex_mesh_draw(ex_mesh_t* m, GLuint shader_program)
   // bind vao/ebo/tex
   glBindVertexArray(m->VAO);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->EBO);
-  glUniform1i(glGetUniformLocation(shader_program, "u_texture"), 4);
-  glUniform1i(glGetUniformLocation(shader_program, "u_spec"), 5);
-  glUniform1i(glGetUniformLocation(shader_program, "u_norm"), 6);
-  
-  GLuint is_lit_loc = glGetUniformLocation(shader_program, "u_is_lit");
-  glUniform1i(is_lit_loc, m->is_lit);
 
-  GLuint is_texture_loc = glGetUniformLocation(shader_program, "u_is_textured");
-  GLuint is_spec_loc = glGetUniformLocation(shader_program, "u_is_spec");
-  GLuint is_norm_loc = glGetUniformLocation(shader_program, "u_is_norm");
+  int index = 0;
+  if (mesh_cached[0] == shader_program) {
+    index = 0;
+  } else if (mesh_cached[1] == shader_program) {
+    index = 1;
+  } else {
+    if (!mesh_cached[0]) {
+      mesh_cached[0] = shader_program;
+      index = 0;
+    } else if (!mesh_cached[1]) {
+      mesh_cached[1] = shader_program;
+      index = 1;
+    }
+
+    diffuse_loc[index] = glGetUniformLocation(shader_program, "u_texture");
+    spec_loc[index] = glGetUniformLocation(shader_program, "u_spec");
+    norm_loc[index] = glGetUniformLocation(shader_program, "u_norm");
+    is_lit_loc[index] = glGetUniformLocation(shader_program, "u_is_lit");
+    is_texture_loc[index] = glGetUniformLocation(shader_program, "u_is_textured");
+    is_spec_loc[index] = glGetUniformLocation(shader_program, "u_is_spec");
+    is_norm_loc[index] = glGetUniformLocation(shader_program, "u_is_norm");
+    transform_loc[index] = glGetUniformLocation(shader_program, "u_model");
+  }
+
+
+
+  glUniform1i(diffuse_loc[index], 4);
+  glUniform1i(spec_loc[index], 5);
+  glUniform1i(norm_loc[index], 6);
+  glUniform1i(is_lit_loc[index], m->is_lit);
   
   if (m->texture < 1) {
-    glUniform1i(is_texture_loc, 0);
+    glUniform1i(is_texture_loc[index], 0);
   } else { 
-    glUniform1i(is_texture_loc, 1);
+    glUniform1i(is_texture_loc[index], 1);
     glActiveTexture(GL_TEXTURE4);
     glBindTexture(GL_TEXTURE_2D, m->texture);
   }
 
   if (m->texture_spec < 1) {
-    glUniform1i(is_spec_loc, 0);
+    glUniform1i(is_spec_loc[index], 0);
   } else {
-    glUniform1i(is_spec_loc, 1);
+    glUniform1i(is_spec_loc[index], 1);
     glActiveTexture(GL_TEXTURE5);
     glBindTexture(GL_TEXTURE_2D, m->texture_spec);
   }
 
   if (m->texture_norm < 1) {
-    glUniform1i(is_norm_loc, 0);
+    glUniform1i(is_norm_loc[index], 0);
   } else {
-    glUniform1i(is_norm_loc, 1);
+    glUniform1i(is_norm_loc[index], 1);
     glActiveTexture(GL_TEXTURE6);
     glBindTexture(GL_TEXTURE_2D, m->texture_norm);
   }
 
   // pass transform matrix to shader
-  GLuint transform_loc = glGetUniformLocation(shader_program, "u_model");
-  glUniformMatrix4fv(transform_loc, 1, GL_FALSE, m->transform[0]);
+  glUniformMatrix4fv(transform_loc[index], 1, GL_FALSE, m->transform[0]);
 
   // draw mesh
   glDrawElements(GL_TRIANGLES, m->icount, GL_UNSIGNED_INT, 0);

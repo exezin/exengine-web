@@ -5,6 +5,9 @@
 #include "text.h"
 #include "sound.h"
 
+GLuint point_count_loc, ambient_loc, point_active_loc;
+int scene_cached = 0;
+
 ex_scene_t* ex_scene_new(GLuint shader)
 {
   ex_scene_t *s = malloc(sizeof(ex_scene_t));
@@ -194,18 +197,25 @@ void ex_scene_draw(ex_scene_t *s)
       pcount++;
     }
   }
-  glUniform1i(glGetUniformLocation(s->shader, "u_point_count"), pcount);
+
+  if (!scene_cached) {
+    point_count_loc = glGetUniformLocation(s->shader, "u_point_count");
+    ambient_loc = glGetUniformLocation(s->shader, "u_ambient_pass");
+    point_active_loc = glGetUniformLocation(s->shader, "u_point_active");
+    scene_cached = 1;
+  }
+  glUniform1i(point_count_loc, pcount);
   
   // do ambient pass/non shadow casting lighting
-  glUniform1i(glGetUniformLocation(s->shader, "u_ambient_pass"), 1);
-  glUniform1i(glGetUniformLocation(s->shader, "u_point_active"), 0);
+  glUniform1i(ambient_loc, 1);
+  glUniform1i(point_active_loc, 0);
   ex_scene_render_models(s, s->shader, 0);
   
   // blend everything after here
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-  glUniform1i(glGetUniformLocation(s->shader, "u_ambient_pass"), 0);
-  glUniform1i(glGetUniformLocation(s->shader, "u_point_count"), 0);
+  glUniform1i(ambient_loc, 0);
+  glUniform1i(point_count_loc, 0);
   
   // render all shadow casting point lights
   for (int i=0; i<EX_MAX_POINT_LIGHTS; i++) {
@@ -216,13 +226,13 @@ void ex_scene_draw(ex_scene_t *s)
 
     // point light
     if (pl->is_shadow && pl->distance_to_cam <= EX_POINT_SHADOW_DIST && pl->is_visible) {
-      glUniform1i(glGetUniformLocation(s->shader, "u_point_active"), 1);
+      glUniform1i(point_active_loc, 1);
       ex_point_light_draw(pl, s->shader, NULL);
 
       // one render pass for the light and shadows
       ex_scene_render_models(s, s->shader, 0);
     } else {
-      glUniform1i(glGetUniformLocation(s->shader, "u_point_active"), 0);
+      glUniform1i(point_active_loc, 0);
     }
   }
   glDisable(GL_BLEND);

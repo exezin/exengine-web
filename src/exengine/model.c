@@ -1,6 +1,9 @@
 #include <string.h>
 #include "model.h"
 
+GLuint has_skeleton_loc[2], bone_loc[2];
+GLuint model_cached[2] = {0, 0};
+
 ex_model_t* ex_model_new()
 {
   // init lists etc
@@ -87,15 +90,30 @@ void ex_model_update(ex_model_t *m, float delta_time)
 
 void ex_model_draw(ex_model_t *m, GLuint shader)
 {
+  int index = 0;
+  if (model_cached[0] == shader) {
+    index = 0;
+  } else if (model_cached[1] == shader) {
+    index = 1;
+  } else {
+    if (!model_cached[0]) {
+      model_cached[0] = shader;
+      index = 0;
+    } else if (!model_cached[1]) {
+      model_cached[1] = shader;
+      index = 1;
+    }
+
+    has_skeleton_loc[index] = glGetUniformLocation(shader, "u_has_skeleton");
+    bone_loc[index] = glGetUniformLocation(shader, "u_bone_matrix");
+  }
+
   // pass bone data
-  GLuint has_skeleton_loc = glGetUniformLocation(shader, "u_has_skeleton");
-  glUniform1i(has_skeleton_loc, 0);
+  glUniform1i(has_skeleton_loc[index], 0);
 
   if (m->bones != NULL && m->current_anim != NULL) {
-    glUniform1i(has_skeleton_loc, 1);
-    
-    GLuint bone_loc = glGetUniformLocation(shader, "u_bone_matrix");
-    glUniformMatrix4fv(bone_loc, m->bones_len, GL_TRUE, &m->skeleton[0][0][0]);
+    glUniform1i(has_skeleton_loc[index], 1);
+    glUniformMatrix4fv(bone_loc[index], m->bones_len, GL_TRUE, &m->skeleton[0][0][0]);
   }
 
   // render meshes
