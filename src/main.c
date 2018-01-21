@@ -8,6 +8,9 @@
 #include <emscripten/emscripten.h>
 #endif
 
+// enable gles2/webgl1
+const int EXENGINE_GLES = 2;
+
 #include "exengine/shader.h"
 #include "exengine/window.h"
 #include "exengine/camera.h"
@@ -82,8 +85,10 @@ int main()
   // add some lighting to the scene
   ex_point_light_t *light = ex_point_light_new(player->position, (vec3){0.8f, 0.8f, 0.8f}, 1);
   light->position[1] = 5.0f;
+  light->is_shadow = 0;
   ex_scene_add_pointlight(scene, light);
   ex_point_light_t *light2 = ex_point_light_new((vec3){-2.5f, 5.0f, -20.0f}, (vec3){1.0f, 1.0f, 1.5f}, 1);
+  light2->is_shadow = 0;
   ex_scene_add_pointlight(scene, light2);
   plight = ex_point_light_new((vec3){0.0f, 0.0f, 0.0f}, (vec3){0.3f, 0.3f, 0.3f}, 0);
   plight->is_shadow = 0;

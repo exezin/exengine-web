@@ -4,7 +4,7 @@ CC    =gcc
 FLAGS =-g -lm -lstdc++ -lGL -lGLEW -lglfw -lfreetype -lopenal -I/usr/include/freetype2
 else
 CC    =emcc
-FLAGS =-s USE_WEBGL2=1 -s USE_GLFW=3 -s USE_FREETYPE=1 -s ALLOW_MEMORY_GROWTH=1 -lopenal --preload-file data
+FLAGS =-s USE_WEBGL2=$(USE_WEBGL2) -s USE_GLFW=3 -s USE_FREETYPE=1 -s ALLOW_MEMORY_GROWTH=1 -lopenal
 endif
 
 EDIR  =exengine
@@ -39,10 +39,20 @@ proj: $(OBJ)
 	@echo "**success**"
 
 files:
-	@echo $(USE_EMCC)
+ifeq ($(USE_EMCC), 1)
+	@echo "using emcc"
+	@echo "using webgl" $(USE_WEBGL2)
+endif
 	mkdir -p $(ODIR)
 	mkdir -p build
 	cp -RTv data build/data/
+ifeq ($(USE_WEBGL2), 0)
+	@echo "using gles2 shaders"
+	cp -RTv shaders/gles2/ build/data/shaders/
+else
+	@echo "using gles3 shaders"
+	cp -RTv shaders/ build/data/shaders/
+endif
 
 .PHONY: clean
 
