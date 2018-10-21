@@ -1,3 +1,11 @@
+/* octree
+  A simple octree implementation for
+  storing arbitrary data.
+
+  Used for collision optimizations,
+  render culling etc.
+*/
+
 #ifndef EX_OCTREE_H
 #define EX_OCTREE_H
 
@@ -7,8 +15,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
-#include "list.h"
-#include "math.h" 
+#include "exe_list.h"
+#include "mathlib.h" 
 
 #define EX_OCTREE_DEFAULT_MIN_SIZE 5.0f
 extern int ex_octree_min_size;
@@ -67,20 +75,61 @@ struct ex_octree_t {
   int player_inside;
 };
 
+/**
+ * [ex_octree_new defines a new octree]
+ * @param  type [the data type to store]
+ * @return      [the new octree]
+ */
 ex_octree_t* ex_octree_new(uint8_t type);
 
+/**
+ * [ex_octree_init init the tree via the given object list]
+ * @param o       [the octree to init]
+ * @param region  [the max region]
+ * @param objects [list of objects to add]
+ */
 void ex_octree_init(ex_octree_t *o, ex_rect_t region, list_t *objects);
 
+/**
+ * [ex_octree_build]
+ * @param o [the octree to rebuild]
+ */
 void ex_octree_build(ex_octree_t *o);
 
+/**
+ * [ex_octree_finalize migrates the data to flat arrays for speed]
+ * @param o [the octree to finalize]
+ */
 void ex_octree_finalize(ex_octree_t *o);
 
+/**
+ * [ex_octree_reset cleans up the octree and sets it to its default state]
+ * @param  o [the octree to clean]
+ * @return   [the empty octree]
+ */
 ex_octree_t* ex_octree_reset(ex_octree_t *o);
 
+/**
+ * [ex_octree_get_colliding_count]
+ * @param o      [the octree to check]
+ * @param bounds [the bounds to check]
+ * @param count  [the amount of colliding entries]
+ */
 void ex_octree_get_colliding_count(ex_octree_t *o, ex_rect_t *bounds, int *count);
 
+/**
+ * [ex_octree_get_colliding get all colliding entry data]
+ * @param o         [the octree to check]
+ * @param bounds    [the bounds to check]
+ * @param data_list [the output data]
+ * @param index     [should be 0]
+ */
 void ex_octree_get_colliding(ex_octree_t *o, ex_rect_t *bounds, ex_octree_data_t *data_list, int *index);
 
+/**
+ * [ex_octree_data_ptr]
+ * @param o []
+ */
 static inline void* ex_octree_data_ptr(ex_octree_t *o) {
   switch (o->data_type) {
     case OBJ_TYPE_UINT:
@@ -107,10 +156,16 @@ static inline void* ex_octree_data_ptr(ex_octree_t *o) {
       return NULL;
       break;
   }
-
-  return NULL;
+  
+  return o;
 }
 
+/**
+ * [ex_rect_new defines a new 3d rect]
+ * @param  min [the min position]
+ * @param  max [the max position]
+ * @return     [the new rect]
+ */
 static inline ex_rect_t ex_rect_new(vec3 min, vec3 max) {
   ex_rect_t r;
   memcpy(r.min, min, sizeof(vec3));

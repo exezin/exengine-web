@@ -1,8 +1,6 @@
-#include <string.h>
 #include "model.h"
-
-GLuint has_skeleton_loc[2], bone_loc[2];
-GLuint model_cached[2] = {0, 0};
+#include "shader.h"
+#include <string.h>
 
 ex_model_t* ex_model_new()
 {
@@ -17,37 +15,84 @@ ex_model_t* ex_model_new()
   m->is_shadow = 1;
   m->is_lit    = 1;
   m->use_transform  = 0;
-  mat4x4_identity(m->transform);
 
   m->current_anim  = NULL;
   m->current_time  = 0.0;
   m->current_frame = 0;
 
+  m->transforms = NULL;
+  m->instance_count = 0;
+
   return m;
 }
 
-void ex_model_update(ex_model_t *m, float delta_time)
+ex_model_t* ex_model_copy(ex_model_t *model)
 {
-  // update mesh transform
+  // copy the mesh directly
+  // keeping the pointers the same
+  ex_model_t *m = malloc(sizeof(ex_model_t));
+  memcpy(m, model, sizeof(ex_model_t));
+
+  // init instancing matrix vbos etc 
+  ex_model_init_instancing(m, 1);
+  
+  return m;
+}
+
+void ex_model_init_instancing(ex_model_t *m, int count)
+{
+  // cleanup old if it exists
+  if (m->transforms) {
+    free(m->transforms);
+    m->transforms = NULL;
+
+    glDeleteBuffers(1, &m->instance_vbo);
+  }
+
+  m->transforms = malloc(sizeof(mat4x4) * count);
+  for (int i=0; i<count; i++)
+    mat4x4_identity(m->transforms[i]);
+
+  m->instance_count = count;
+
+  glGenBuffers(1, &m->instance_vbo);
+  glBindBuffer(GL_ARRAY_BUFFER, m->instance_vbo);
+  glBufferData(GL_ARRAY_BUFFER, count * sizeof(mat4x4), &m->transforms[0], GL_DYNAMIC_DRAW);
+
   list_node_t *n = m->mesh_list;
   while (n->data != NULL) {
-    // update attributes 
     ex_mesh_t *mesh = n->data;
-    memcpy(mesh->position, m->position, sizeof(vec3));
-    memcpy(mesh->rotation, m->rotation, sizeof(vec3));
-    mesh->scale  = m->scale;
-    mesh->is_lit = m->is_lit;
+    glBindVertexArray(mesh->VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, m->instance_vbo);
 
-    mesh->use_transform = m->use_transform;
-    if (m->use_transform)
-      mat4x4_dup(mesh->transform, m->transform);
+    glEnableVertexAttribArray(7);
+    glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, sizeof(mat4x4), (GLvoid*)0);
+    glVertexAttribDivisor(7, 1);
+    
+    glEnableVertexAttribArray(8);
+    glVertexAttribPointer(8, 4, GL_FLOAT, GL_FALSE, sizeof(mat4x4), (GLvoid*)(sizeof(vec4)));
+    glVertexAttribDivisor(8, 1);
+
+    glEnableVertexAttribArray(9);
+    glVertexAttribPointer(9, 4, GL_FLOAT, GL_FALSE, sizeof(mat4x4), (GLvoid*)(2 * sizeof(vec4)));
+    glVertexAttribDivisor(9, 1);
+
+    glEnableVertexAttribArray(10);
+    glVertexAttribPointer(10, 4, GL_FLOAT, GL_FALSE, sizeof(mat4x4), (GLvoid*)(3 * sizeof(vec4)));
+    glVertexAttribDivisor(10, 1);
+
+
+    glBindVertexArray(0);
 
     if (n->next != NULL)
       n = n->next;
     else
       break;
   }
+}
 
+void ex_model_update(ex_model_t *m, float delta_time)
+{
   // handle animations
   ex_anim_t *anim = m->current_anim;
 
@@ -90,36 +135,34 @@ void ex_model_update(ex_model_t *m, float delta_time)
 
 void ex_model_draw(ex_model_t *m, GLuint shader)
 {
-  int index = 0;
-  if (model_cached[0] == shader) {
-    index = 0;
-  } else if (model_cached[1] == shader) {
-    index = 1;
-  } else {
-    if (!model_cached[0]) {
-      model_cached[0] = shader;
-      index = 0;
-    } else if (!model_cached[1]) {
-      model_cached[1] = shader;
-      index = 1;
-    }
-
-    has_skeleton_loc[index] = glGetUniformLocation(shader, "u_has_skeleton");
-    bone_loc[index] = glGetUniformLocation(shader, "u_bone_matrix");
+  // handle transformations
+  if (!m->use_transform && m->instance_count < 2) {
+    mat4x4_identity(m->transforms[0]);
+    mat4x4_translate_in_place(m->transforms[0], m->position[0], m->position[1], m->position[2]);
+    mat4x4_rotate_Y(m->transforms[0], m->transforms[0], rad(m->rotation[1]));
+    mat4x4_rotate_X(m->transforms[0], m->transforms[0], rad(m->rotation[0]));
+    mat4x4_rotate_Z(m->transforms[0], m->transforms[0], rad(m->rotation[2]));
+    mat4x4_scale_aniso(m->transforms[0], m->transforms[0], m->scale, m->scale, m->scale);
   }
 
   // pass bone data
-  glUniform1i(has_skeleton_loc[index], 0);
+  GLuint has_skeleton_loc = ex_uniform(shader, "u_has_skeleton");
+  glUniform1i(has_skeleton_loc, 0);
 
   if (m->bones != NULL && m->current_anim != NULL) {
-    glUniform1i(has_skeleton_loc[index], 1);
-    glUniformMatrix4fv(bone_loc[index], m->bones_len, GL_TRUE, &m->skeleton[0][0][0]);
+    glUniform1i(has_skeleton_loc, 1);
+    glUniformMatrix4fv(ex_uniform(shader, "u_bone_matrix"), m->bones_len, GL_TRUE, &m->skeleton[0][0][0]);
   }
+
+  // update instancing matrix vbo
+  glBindBuffer(GL_ARRAY_BUFFER, m->instance_vbo);
+  glBufferData(GL_ARRAY_BUFFER, m->instance_count * sizeof(mat4x4), &m->transforms[0], GL_DYNAMIC_DRAW);
 
   // render meshes
   list_node_t *n = m->mesh_list;
   while (n->data != NULL) {
-    ex_mesh_draw(n->data, shader);
+    glUniform1i(ex_uniform(shader, "u_is_lit"), m->is_lit);
+    ex_mesh_draw(n->data, shader, m->instance_count);
 
     if (n->next != NULL)
       n = n->next;
@@ -217,14 +260,17 @@ void ex_model_set_pose(ex_model_t *m, ex_frame_t frame)
   }
 }
 
-void ex_model_set_anim(ex_model_t *m, size_t index)
+void ex_model_set_anim(ex_model_t *m, char *id)
 {
-  if (index > m->anims_len) {
-    m->current_anim = NULL;
-    return;
-  }
+  for (int i = 0; i < m->anims_len; i++)
+    if(!strcmp(m->anims[i].name, id)) {
+      m->current_anim = &m->anims[i];
+      break;
+    }
 
-  m->current_anim  = &m->anims[index];
+    if(m->current_anim == NULL)
+      return;
+
   m->current_time  = 0;
   m->current_frame = m->current_anim->first;
 }

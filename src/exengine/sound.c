@@ -1,27 +1,25 @@
-#include "sound.h"
-#include "io.h"
-#include "stb_vorbis.c"
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include "exe_io.h"
+#include "sound.h"
+#include "stb_vorbis.c"
 
-ex_sound_t *ex_sound;
+ex_sound_t ex_sound;
 
 void ex_sound_init()
 {
-  ex_sound = malloc(sizeof(ex_sound_t));
-
   // init device
-  ex_sound->device = alcOpenDevice(NULL);
-  if (!ex_sound->device) {
+  ex_sound.device = alcOpenDevice(NULL);
+  if (!ex_sound.device) {
     printf("Failed opening OpenAL device\n");
-    goto cleanup;
+    return;
   }
   
   // init and set context
-  ex_sound->context = alcCreateContext(ex_sound->device, NULL);
-  if (!alcMakeContextCurrent(ex_sound->context)) {
+  ex_sound.context = alcCreateContext(ex_sound.device, NULL);
+  if (!alcMakeContextCurrent(ex_sound.context)) {
     printf("Failed creating OpenAL context current\n");
-    goto cleanup;
+    return;
   }
 
   // setup listener properties
@@ -32,12 +30,6 @@ void ex_sound_init()
   alListenerfv(AL_VELOCITY, vel);
   alListenerfv(AL_ORIENTATION, ori);
   alListenerf(AL_GAIN, 1.0);
-
-  return;
-
-cleanup:
-  free(ex_sound);
-  ex_sound = NULL;
 }
 
 ex_source_t* ex_sound_load_source(const char *path, ex_sound_e format, int loop)
@@ -45,15 +37,18 @@ ex_source_t* ex_sound_load_source(const char *path, ex_sound_e format, int loop)
   printf("Loading audio file %s\n", path);
   int channels, rate;
   short *data = NULL;
-  int32_t len = 0;
+  int32_t decode_len = 0;
 
   // decode ogg data
   if (format == EX_SOUND_OGG) {
     printf("Decoding ogg format\n");
-    len = stb_vorbis_decode_filename(path, &channels, &rate, &data);
+    size_t len = 0;
+    uint8_t *file_data = (uint8_t*)io_read_file(path, "rb", &len);
+
+    decode_len = stb_vorbis_decode_memory(file_data, len, &channels, &rate, &data);
     
     // loading failed
-    if (len <= 0) {
+    if (decode_len <= 0) {
       printf("Failed decoding ogg file %s\n", path);
       return NULL;
     }
@@ -72,7 +67,7 @@ ex_source_t* ex_sound_load_source(const char *path, ex_sound_e format, int loop)
   alSourcei(s->id, AL_LOOPING, loop);
 
   // buffer
-  uint32_t length = len * channels * (sizeof(int16_t) / sizeof(uint8_t));
+  uint32_t length = decode_len * channels * (sizeof(int16_t) / sizeof(uint8_t));
   alGenBuffers(1, &s->buffer);
   alBufferData(s->buffer, AL_FORMAT_STEREO16, data, length, rate);
 
@@ -95,8 +90,6 @@ void ex_sound_destroy(ex_source_t *s)
 void ex_sound_exit()
 {
   alcMakeContextCurrent(NULL);
-  alcDestroyContext(ex_sound->context);
-  alcCloseDevice(ex_sound->device);
-  free(ex_sound);
-  ex_sound = NULL;
+  alcDestroyContext(ex_sound.context);
+  alcCloseDevice(ex_sound.device);
 }

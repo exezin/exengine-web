@@ -1,40 +1,50 @@
+/* camera
+  Handles creating and updating various types
+  of cameras.
+*/
+
 #ifndef EX_CAMERA_H
 #define EX_CAMERA_H
 
 #define GLEW_STATIC
 #include <GL/glew.h>
 
-#include "math.h"
-#include <stdbool.h>
+#include "mathlib.h"
+#include "model.h"
+
+typedef struct {
+  mat4x4 view, projection, inverse_view;
+} ex_camera_matrices_t;
 
 typedef struct {
   vec3 position, front, up;
-  double yaw, pitch, last_x, last_y, sensitivity, fov;
-  mat4x4 view, projection;
-  int width, height;
+  float yaw, pitch, last_x, last_y, fov, sensitivity;
+  int width, height, update;
+  ex_model_t *view_model;
+  ex_camera_matrices_t matrices;
 } ex_fps_camera_t;
 
 /**
- * [ex_fps_camera_new create a new isometric ortho camera]
+ * [ex_fps_camera_new create a first person camera]
  * @param  x [x position]
  * @param  y [y position]
  * @param  z [z position]
  */
-ex_fps_camera_t* ex_fps_camera_new(float x, float y, float z, double sensitivity, double fov);
+ex_fps_camera_t* ex_fps_camera_new(float x, float y, float z, float sensitivity, float fov);
 
 /**
- * [iso_cam_resize reset projections etc]
- * @param cam [ex_fps_camera_t pointer]
+ * [ex_fps_camera_resize adjust the projection matrices]
+ * @param cam [camera to resize]
+ *
+ * To be called right after scene_draw, but only if
+ * the specified scene width and height where 0x0.
  */
 void ex_fps_camera_resize(ex_fps_camera_t *cam);
 
 /**
- * [ex_fps_camera_update update the cams projections etc]
- * @param cam            [ex_fps_camera_t pointer]
- * @param shader_program [shader program to use]
+ * [ex_fps_camera_update handle input and rotation]
+ * @param cam            [camera to update]
  */
-void ex_fps_camera_update(ex_fps_camera_t *cam, GLuint shader_program);
-
-void ex_fps_camera_draw(ex_fps_camera_t *cam, GLuint shader_program);
+void ex_fps_camera_update(ex_fps_camera_t *cam);
 
 #endif // EX_CAMERA_H

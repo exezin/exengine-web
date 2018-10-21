@@ -1,13 +1,19 @@
 #include "iqm.h"
-#include "io.h"
+#include "exe_io.h"
+#include "cache.h"
 #include <string.h>
 
-ex_model_t *ex_iqm_load_model(ex_scene_t *scene, const char *path, int keep_vertices)
+ex_model_t *ex_iqm_load_model(ex_scene_t *scene, const char *path, uint8_t flags)
 {
+  // check if its already in the cache
+  ex_model_t *m_cache = ex_cache_get_model(path);
+  if (m_cache != NULL)
+    return m_cache;
+
   printf("Loading IQM model file %s\n", path);
 
   // read in the file data
-  uint8_t *data = (uint8_t*)io_read_file(path, "rb", NULL);
+  uint8_t *data = io_read_file(path, "rb", NULL);
   if (data == NULL) {
     printf("Failed to load IQM model file %s\n", path);
     return NULL;
@@ -118,7 +124,16 @@ ex_model_t *ex_iqm_load_model(ex_scene_t *scene, const char *path, int keep_vert
     anims = malloc(sizeof(ex_anim_t)*header.num_anims);
     for (int i=0; i<header.num_anims; i++) {
       ex_iqmex_anim_t *a    = &animdata[i];
-      anims[i].name   = a->name;
+
+      /* get anim name */
+      uint32_t ofs_name = a->name;
+      char *name = &file_text[ofs_name]; 
+      uint8_t len = strlen(name); 
+      anims[i].name   = malloc(sizeof(char) * (len+1));
+
+      strcpy(anims[i].name, name);
+      anims[i].name[len+1] = '\0';
+
       anims[i].first  = a->first_frame;
       anims[i].last   = a->num_frames;
       anims[i].rate   = a->framerate;
@@ -179,7 +194,6 @@ ex_model_t *ex_iqm_load_model(ex_scene_t *scene, const char *path, int keep_vert
   model->bind_pose   = bind_pose;
   model->pose        = pose;
   model->vertices    = NULL;
-  model->vertices = NULL;
   model->octree_data = NULL;
 
   // calc inverse base pose
@@ -218,7 +232,7 @@ ex_model_t *ex_iqm_load_model(ex_scene_t *scene, const char *path, int keep_vert
   GLuint index_offset = 0;
   for (int i=0; i<header.num_meshes; i++) {
     ex_vertex_t *vert = &vertices[meshes[i].first_vertex];
-    GLuint *ind    = &indices[meshes[i].first_triangle*3];
+    GLuint *ind       = &indices[meshes[i].first_triangle*3];
 
     // negative offset indices
     GLuint offset = 0;
@@ -238,7 +252,7 @@ ex_model_t *ex_iqm_load_model(ex_scene_t *scene, const char *path, int keep_vert
     ex_mesh_t *m = ex_mesh_new(vert, meshes[i].num_vertexes, ind, meshes[i].num_triangles*3, 0);
 
     // store vertices
-    if (keep_vertices) {
+    if (flags & EX_KEEP_VERTICES) {
       size_t size = meshes[i].num_triangles*3;
       for (int j=0; j<size; j++)
         memcpy(&vis_vertices[vis_len+j], vert[ind[j]].position, sizeof(vec3));
@@ -247,25 +261,47 @@ ex_model_t *ex_iqm_load_model(ex_scene_t *scene, const char *path, int keep_vert
     }
 
     // load textures
-    if (is_file != NULL)
-      m->texture = ex_scene_add_texture(scene, tex_name);
+    char *tex_types[] = {"spec_", "norm_"};
+    if (is_file != NULL) {
+      // diffuse
+      m->texture = ex_cache_texture(tex_name);
+    
+      // spec
+      char spec[strlen(tex_name)+strlen(tex_types[0])];
+      strcpy(spec, tex_types[0]);
+      strcpy(&spec[strlen(tex_types[0])], tex_name);
+      m->texture_spec = ex_cache_texture(spec);
+
+      // norm
+      char norm[strlen(tex_name)+strlen(tex_types[1])];
+      strcpy(norm, tex_types[1]);
+      strcpy(&norm[strlen(tex_types[1])], tex_name);
+      m->texture_norm = ex_cache_texture(norm);
+    }
 
     // push mesh into mesh list
     list_add(model->mesh_list, m);
   }
 
   // store vertices
-  if (keep_vertices) {
+  if (flags & EX_KEEP_VERTICES) {
     model->vertices = malloc(vis_len*sizeof(vec3));
     model->num_vertices = vis_len;
     memcpy(model->vertices, vis_vertices, vis_len*sizeof(vec3));
     ex_scene_add_collision(scene, model);
+    free(model->vertices);
   }
 
+  // store the path for caching purposes
+  strcpy(model->path, path);
+
+  // cleanup data
   printf("Finished loading IQM model %s\n", path);
   free(vertices);
   free(indices);
-  free(vis_vertices);
   free(data);
-  return model;
+
+  // store the model in the cache and return an instance of it
+  ex_cache_model(model);
+  return ex_cache_get_model(path);
 }

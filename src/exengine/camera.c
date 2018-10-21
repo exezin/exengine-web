@@ -1,19 +1,16 @@
 #include "camera.h"
 #include "window.h"
+#include "shader.h"
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 
-GLuint projection_location, view_location, viewp_location;
-int camera_cached = 0;
-
-ex_fps_camera_t* ex_fps_camera_new(float x, float y, float z, double sensitivity, double fov)
+ex_fps_camera_t* ex_fps_camera_new(float x, float y, float z, float sensitivity, float fov)
 {
   ex_fps_camera_t *c = malloc(sizeof(ex_fps_camera_t));
 
-  c->position[0] = 0.0f+x;
-  c->position[1] = 0.0f+y;
-  c->position[2] = 0.0f+z;
+  c->position[0] = x;
+  c->position[1] = y;
+  c->position[2] = z;
   
   c->front[0] = 0.0f;
   c->front[1] = 0.0f;
@@ -33,8 +30,10 @@ ex_fps_camera_t* ex_fps_camera_new(float x, float y, float z, double sensitivity
   c->last_x = 0;
   c->last_y = 0;
 
-  mat4x4_identity(c->view);
-  mat4x4_identity(c->projection);
+  c->update = 1;
+
+  mat4x4_identity(c->matrices.view);
+  mat4x4_identity(c->matrices.projection);
 
   ex_fps_camera_resize(c);
 
@@ -43,28 +42,35 @@ ex_fps_camera_t* ex_fps_camera_new(float x, float y, float z, double sensitivity
 
 void ex_fps_camera_resize(ex_fps_camera_t *cam)
 {
+  GLint viewport[4];
+  glGetIntegerv(GL_VIEWPORT, viewport);
+
   int width, height;
-  glfwGetFramebufferSize(display.window, &width, &height);
+  width = viewport[2];
+  height = viewport[3];
   
   if (cam->width != width || cam->height != height) {
-    mat4x4_perspective(cam->projection, rad(cam->fov), (float)width / (float)height, 0.01f, 1000.0f);
+    mat4x4_perspective(cam->matrices.projection, rad(cam->fov), (float)width / (float)height, 0.01f, 1000.0f);
     cam->width  = width;
     cam->height = height;
   }
 }
 
-void ex_fps_camera_update(ex_fps_camera_t *cam, GLuint shader_program)
+void ex_fps_camera_update(ex_fps_camera_t *cam)
 {
-  double x = display.mouse_x;
-  double y = display.mouse_y;
+  if (!cam->update)
+    return;
 
-  float angle = atan2(y - cam->last_y, x - cam->last_x);
-  float dist  = distance(x, y, cam->last_x, cam->last_y);
+  float x = display.mouse_x;
+  float y = display.mouse_y;
 
-  double offset_x = (dist * cam->sensitivity) * cos(angle);
-  double offset_y = -(dist * cam->sensitivity) * sin(angle);
+  float offset_x = x - cam->last_x;
+  float offset_y = cam->last_y - y;
   cam->last_x = x;
   cam->last_y = y;
+
+  offset_x *= cam->sensitivity;
+  offset_y *= cam->sensitivity;
 
   cam->yaw += offset_x;
   cam->pitch += offset_y;
@@ -84,20 +90,6 @@ void ex_fps_camera_update(ex_fps_camera_t *cam, GLuint shader_program)
 
   vec3 center;
   vec3_add(center, cam->position, cam->front);
-  mat4x4_look_at(cam->view, cam->position, center, cam->up);
-}
-
-void ex_fps_camera_draw(ex_fps_camera_t *cam, GLuint shader_program)
-{
-  if (!camera_cached) {
-    projection_location = glGetUniformLocation(shader_program, "u_projection");
-    view_location = glGetUniformLocation(shader_program, "u_view");
-    viewp_location = glGetUniformLocation(shader_program, "u_view_position");
-    camera_cached = 1;
-  }
- 
-  // send vars to shader
-  glUniformMatrix4fv(projection_location, 1, GL_FALSE, cam->projection[0]);
-  glUniformMatrix4fv(view_location, 1, GL_FALSE, cam->view[0]);
-  glUniform3fv(viewp_location, 1, &cam->position[0]);
+  mat4x4_look_at(cam->matrices.view, cam->position, center, cam->up);
+  mat4x4_invert(cam->matrices.inverse_view, cam->matrices.view);
 }

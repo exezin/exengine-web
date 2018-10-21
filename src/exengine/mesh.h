@@ -1,9 +1,20 @@
+/* mesh
+  A generic mesh container.
+  
+  Each mesh has a single set of
+  textures applied to it, models
+  contain a mesh per texture set used.
+
+  This is automatically handled by the IQM
+  loader, only use the following if you
+  want to manually define vertices
+  via code.
+*/
+
 #ifndef EX_MESH_H
 #define EX_MESH_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include "math.h"
+#include "mathlib.h"
 
 #define GLEW_STATIC
 #include <GL/glew.h>
@@ -21,13 +32,7 @@ typedef struct {
 typedef struct {
   GLuint VAO, VBO, EBO, vcount, icount;
   GLuint texture, texture_spec, texture_norm;
-  mat4x4 transform;
   uint32_t current_frame;
-  int use_transform;
-
-  vec3 position, rotation;
-  float scale;
-  uint8_t is_lit;
 } ex_mesh_t;
 
 /**
@@ -46,7 +51,7 @@ ex_mesh_t* ex_mesh_new(ex_vertex_t *vertices, size_t vcount, GLuint *indices, si
  * @param m              [ex_mesh_t pointer]
  * @param shader_program [shader program to use]
  */
-void ex_mesh_draw(ex_mesh_t* m, GLuint shader_program);
+void ex_mesh_draw(ex_mesh_t* m, GLuint shader_program, int count);
 
 /**
  * [ex_mesh_destroy free any malloc'd data]

@@ -1,12 +1,11 @@
 #include "entity.h"
-#include "list.h"
+#include "exe_list.h"
 #include "model.h"
 #include <stdlib.h>
 #include <string.h>
 
 #define VERY_CLOSE_DIST 0.005f
 #define SLOPE_WALK_ANGLE 0.98f
-#define JUMP_BIAS 2.5f
 
 ex_entity_t* ex_entity_new(ex_scene_t *scene, vec3 radius)
 {
@@ -58,7 +57,7 @@ void ex_entity_collide_with_world(ex_entity_t *entity, vec3 e_position, vec3 e_v
   // check for collision
   vec3 temp;
 
-  for (int i=0; i<3; ++i) {
+  for (int i=0; i<2; ++i) {
     // setup coll packet
     vec3_norm(temp, e_velocity);
     memcpy(entity->packet.e_norm_velocity, temp, sizeof(vec3));
@@ -143,6 +142,8 @@ void ex_entity_check_collision(ex_entity_t *entity)
   if (count <= 0)
     return;
 
+  // printf("%i\n", count);
+
   ex_octree_data_t *data = malloc(sizeof(ex_octree_data_t) * count);
   for (int i=0; i<count; i++) {
     data[i].data = NULL;
@@ -173,11 +174,6 @@ void ex_entity_check_collision(ex_entity_t *entity)
 
 void ex_entity_check_grounded(ex_entity_t *entity, double dt)
 {
-  if (entity->velocity[1] > JUMP_BIAS) {
-    entity->grounded = 0;
-    return;
-  }
-
   vec3 vel = {0.0f, -(entity->radius[1]+0.25f), 0.0f};
   memcpy(entity->packet.r3_position, entity->position, sizeof(vec3));
   memcpy(entity->packet.r3_velocity, vel, sizeof(vec3));

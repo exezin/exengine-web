@@ -3,17 +3,17 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-ex_texture_t* ex_texture_load(const char *file, int get_data)
+ex_texture_t* ex_texture_load(const char *file_name, int get_data)
 {
   // prepend file directory
   size_t len = strlen(EX_TEXTURE_LOC);
-  char file_dir[len + strlen(file)];
+  char file_dir[len + strlen(file_name)];
   strcpy(file_dir, EX_TEXTURE_LOC);
-  strcpy(&file_dir[len], file);
+  strcpy(&file_dir[len], file_name);
   
   printf("Loading texture %s\n", file_dir);
 
-  // attempt to load image
+  // attempt to load image 
   int w,h,n;
   uint8_t *data = stbi_load(file_dir, &w, &h, &n, 4);
   if (data == NULL) {
@@ -25,7 +25,7 @@ ex_texture_t* ex_texture_load(const char *file, int get_data)
   ex_texture_t *t = malloc(sizeof(ex_texture_t));
   t->width  = w;
   t->height = h;
-  strncpy(t->name, file, 32);
+  strncpy(t->name, file_name, 32);
   
   // do we want the data?
   if (get_data == 1) {
@@ -50,14 +50,13 @@ ex_texture_t* ex_texture_load(const char *file, int get_data)
   // set some basic params
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 
-  // apparently webgl doesnt like this
-#ifndef __EMSCRIPTEN__
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-#else
+  float aniso = 0.0f;
+  glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aniso);
+
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-#endif
 
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
   glGenerateMipmap(GL_TEXTURE_2D);
