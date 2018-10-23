@@ -264,19 +264,19 @@ ex_model_t *ex_iqm_load_model(ex_scene_t *scene, const char *path, uint8_t flags
     char *tex_types[] = {"spec_", "norm_"};
     if (is_file != NULL) {
       // diffuse
-      m->texture = ex_cache_texture(tex_name);
+      m->texture = ex_cache_texture(tex_name, GL_RGBA, GL_RGBA);
     
       // spec
       char spec[strlen(tex_name)+strlen(tex_types[0])];
       strcpy(spec, tex_types[0]);
       strcpy(&spec[strlen(tex_types[0])], tex_name);
-      m->texture_spec = ex_cache_texture(spec);
+      m->texture_spec = ex_cache_texture(spec, GL_RGBA, GL_RGBA);
 
       // norm
       char norm[strlen(tex_name)+strlen(tex_types[1])];
       strcpy(norm, tex_types[1]);
       strcpy(&norm[strlen(tex_types[1])], tex_name);
-      m->texture_norm = ex_cache_texture(norm);
+      m->texture_norm = ex_cache_texture(norm, GL_RGBA, GL_RGBA);
     }
 
     // push mesh into mesh list

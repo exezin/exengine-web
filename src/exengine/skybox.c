@@ -50,7 +50,7 @@ ex_skybox_t* ex_skybox_new(const char *tex_name)
     strcpy(&name[strlen(tex_name)], suffix[i]);
 
     // load texture
-    ex_texture_t *tex = ex_texture_load(name, 1);
+    ex_texture_t *tex = ex_texture_load(name, 1, GL_RGBA, GL_RGBA);
     if (tex == NULL) {
       printf("Failed creating skybox\n");
       return NULL;

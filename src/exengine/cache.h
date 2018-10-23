@@ -42,9 +42,11 @@ ex_model_t* ex_cache_get_model(const char *path);
 /**
  * [ex_cache_texture store texture in cache and/or return cached texture]
  * @param  path [path to the texture file]
+ * @param  fa   [internal format]
+ * @param  fb   [format]
  * @return      [the cached texture ID]
  */
-GLuint ex_cache_texture(const char *path);
+GLuint ex_cache_texture(const char *path, GLint fa, GLint fb);
 
 /**
  * [ex_cache_flush cleanup all data from the cache]

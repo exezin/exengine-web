@@ -42,7 +42,7 @@ ex_model_t* ex_cache_get_model(const char *path)
   return NULL;
 }
 
-GLuint ex_cache_texture(const char *path)
+GLuint ex_cache_texture(const char *path, GLint fa, GLint fb)
 {
   // check if texture already exists
   list_node_t *n = texture_list;
@@ -64,7 +64,7 @@ GLuint ex_cache_texture(const char *path)
   printf("Caching texture %s\n", path);
 
   // doesnt exist, create texture
-  ex_texture_t *t = ex_texture_load(path, 0);
+  ex_texture_t *t = ex_texture_load(path, 0, fa, fb);
   if (t != NULL) {
     // store it in the list
     list_add(texture_list, (void*)t);

@@ -63,6 +63,16 @@ void exengine(char **argv, uint8_t flags)
     return;
   }
 
+  const char ES_VERSION_2_0[] = "OpenGL ES 2.0 (WebGL 1.0)";
+  const char ES_VERSION_3_0[] = "OpenGL ES 3.0 (WebGL 2.0)";
+  const char *gl_version = glGetString(GL_VERSION);
+  printf("Using %s\n", gl_version);
+  /*if (strncmp(version, ES_VERSION_2_0, sizeof(ES_VERSION_2_0)) == 0) {
+    printf("WEBGL1!\n");
+  } else if (strncmp(version, ES_VERSION_3_0, sizeof(ES_VERSION_3_0)) == 0) {
+    printf("WEBGL2!\n");
+  }*/
+
   // init rendering modules
   ex_defaults_textures();
   ex_framebuffer_init();
@@ -70,7 +80,6 @@ void exengine(char **argv, uint8_t flags)
   // user init callback
   ex_init_ptr();
   /* ----------------- */
-
 
   /* -- UPDATE ENGINE -- */
   last_ex_frame_time = glfwGetTime();

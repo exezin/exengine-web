@@ -3,7 +3,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-ex_texture_t* ex_texture_load(const char *file_name, int get_data)
+ex_texture_t* ex_texture_load(const char *file_name, int get_data, GLint fa, GLint fb)
 {
   // prepend file directory
   size_t len = strlen(EX_TEXTURE_LOC);
@@ -58,8 +58,10 @@ ex_texture_t* ex_texture_load(const char *file_name, int get_data)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+  glTexImage2D(GL_TEXTURE_2D, 0, fa, w, h, 0, fb, GL_UNSIGNED_BYTE, data);
   glGenerateMipmap(GL_TEXTURE_2D);
+
+  // GL_SRGB8_ALPHA8 GL_RGBA
 
   // unset texture
   glBindTexture(GL_TEXTURE_2D, 0);
